@@ -1,0 +1,40 @@
+name: DeepSeek Code Review (Mention)
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  pull-requests: write
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    name: DeepSeek Code Review
+    steps:
+      - name: DeepSeek 代码审查
+        uses: hustcer/deepseek-review@90c887892350e87fdcf517ddc41b3b826941614b # v1
+        with:
+          chat-token: ${{ secrets.CHAT_TOKEN }}
+          model: deepseek-v4-flash
+          temperature: 0.3
+          watch-mention: "@deepseek"
+          allowed-associations: "OWNER,MEMBER,COLLABORATOR"
+          exclude-patterns: 'pnpm-lock.yaml,package-lock.json,*.lock,*.min.js'
+          sys-prompt: |
+            你是一位资深代码审查专家，负责分析 GitHub Pull Request 的代码变更。
+            请用中文回复，按以下分类列出发现的问题：
+
+            1. [BUG] — 逻辑错误、潜在 bug、边界情况
+            2. [SECURITY] — 安全漏洞（注入、XSS、敏感信息泄露等）
+            3. [PERFORMANCE] — 性能问题
+            4. [STYLE] — 代码风格问题
+            5. [SUGGESTION] — 改进建议
+
+            对每个问题，标注文件名、行号范围，并给出具体的修复建议。
