@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "minimal-order-mcp", "runs": [{"id": "eval-1-with_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,QVBJX0JBU0VfVVJMPWh0dHA6Ly9sb2NhbGhvc3Q6ODAwMAo="}, {"name": "api_client.py", "type": "text", "content": "\"\"\"\nHTTP client for the local order REST API.\n\nReads API_BASE_URL and optional API_KEY from environment variables.\nAll functions return dicts/lists ready for JSON serialization.\n\nAdd retry logic, caching, or auth middleware here without touching the MCP layer.\n\"\"\"\n\nimport os\nfrom typing import Any\n\nimport httpx\n\nBASE_URL = os.getenv(\"API_BASE_URL\", \"http://localhost:8000\")\nAPI_KEY = os.getenv(\"API_KEY\", \"\")\n\n\ndef _headers() -> dict[str, str]:\n    \"\"\"Build request headers, including auth if API_KEY is set.\"\"\"\n    h = {\"Accept\": \"application/json\"}\n    if API_KEY:\n        h[\"Authorization\"] = f\"Bearer {API_KEY}\"\n    return h\n\n\nasync def _get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:\n    \"\"\"Send a GET request to the order API. Returns the parsed JSON body.\"\"\"\n    url = f\"{BASE_URL.rstrip('/')}{path}\"\n    async with httpx.AsyncClient(timeout=30) as client:\n        resp = await client.get(url, headers=_headers(), params=params)\n        resp.raise_for_status()\n        return resp.json()\n\n\nasync def search_orders(query: str, limit: int = 20) -> list[dict[str, Any]]:\n    \"\"\"Search orders by keyword across order number, customer name, etc.\"\"\"\n    data = await _get(\"/api/orders/search\", {\"q\": query, \"limit\": limit})\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order(order_id: str) -> dict[str, Any] | None:\n    \"\"\"Fetch a single order by its ID. Returns None if not found.\"\"\"\n    try:\n        return await _get(f\"/api/orders/{order_id}\")\n    except httpx.HTTPStatusError as e:\n        if e.response.status_code == 404:\n            return None\n        raise\n\n\nasync def list_orders(\n    status: str = \"all\", limit: int = 20, offset: int = 0\n) -> dict[str, Any]:\n    \"\"\"List orders, optionally filtered by status.\"\"\"\n    params: dict[str, Any] = {\"limit\": limit, \"offset\": offset}\n    if status != \"all\":\n        params[\"status\"] = status\n    return await _get(\"/api/orders\", params)\n\n\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders within a date range (ISO format: YYYY-MM-DD).\"\"\"\n    data = await _get(\n        \"/api/orders\",\n        {\"start_date\": start_date, \"end_date\": end_date, \"limit\": limit},\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_orders_by_customer(\n    customer: str, limit: int = 20\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    data = await _get(\n        \"/api/orders/by-customer\", {\"customer\": customer, \"limit\": limit}\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order_stats(period: str = \"today\") -> dict[str, Any]:\n    \"\"\"Get aggregate stats: total count, revenue, breakdown by status.\"\"\"\n    return await _get(\"/api/orders/stats\", {\"period\": period})\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nOrder REST API \u2014 FastAPI app with in-memory sample data.\n\nRun with: uvicorn order_api:app --reload --port 8000\n\nReplace the ORDERS list with your database (SQLite, Postgres, etc.).\n\"\"\"\n\nfrom datetime import datetime, timedelta\nfrom typing import Any\n\nfrom fastapi import FastAPI, HTTPException, Query\n\napp = FastAPI(title=\"Order API\", version=\"0.1.0\")\n\n# ---------------------------------------------------------------------------\n# Sample data \u2014 replace with your database\n# ---------------------------------------------------------------------------\n\nNOW = datetime.now()\n\nORDERS: list[dict[str, Any]] = [\n    {\n        \"id\": \"ORD-20260601-001\",\n        \"order_number\": \"SO20260601001\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 1280.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"LAPTOP-BAG-01\", \"name\": \"\u7b14\u8bb0\u672c\u7535\u8111\u5305\", \"qty\": 2, \"price\": 180.00},\n            {\"sku\": \"MOUSE-WL-02\", \"name\": \"\u65e0\u7ebf\u9f20\u6807\", \"qty\": 4, \"price\": 230.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260602-002\",\n        \"order_number\": \"SO20260602002\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 5600.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MONITOR-27-4K\", \"name\": \"27\u5bf84K\u663e\u793a\u5668\", \"qty\": 1, \"price\": 4200.00},\n            {\"sku\": \"HDMI-CBL-2M\", \"name\": \"HDMI\u7ebf2\u7c73\", \"qty\": 2, \"price\": 700.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(days=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=12)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260603-003\",\n        \"order_number\": \"SO20260603003\",\n        \"customer_name\": \"\u738b\u4e94\",\n        \"customer_email\": \"wangwu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 350.50,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"USB-HUB-7\", \"name\": \"7\u53e3USB\u96c6\u7ebf\u5668\", \"qty\": 1, \"price\": 180.50},\n            {\"sku\": \"CABLE-TYPE-C\", \"name\": \"Type-C\u6570\u636e\u7ebf\", \"qty\": 5, \"price\": 170.00},\n        ],\n        \"shipping_address\": \"\u5e7f\u5dde\u5e02\u5929\u6cb3\u533a\u5929\u6cb3\u8def385\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=6)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=6)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260604-004\",\n        \"order_number\": \"SO20260604004\",\n        \"customer_name\": \"\u8d75\u516d\",\n        \"customer_email\": \"zhaoliu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 8999.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MECH-KB-RGB\", \"name\": \"\u673a\u68b0\u952e\u76d8RGB\", \"qty\": 3, \"price\": 1999.00},\n            {\"sku\": \"MOUSE-PAD-XL\", \"name\": \"\u8d85\u5927\u9f20\u6807\u57ab\", \"qty\": 3, \"price\": 1000.00},\n        ],\n        \"shipping_address\": \"\u6df1\u5733\u5e02\u5357\u5c71\u533a\u79d1\u6280\u56ed\u5357\u8def\",\n        \"created_at\": (NOW - timedelta(days=1)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260605-005\",\n        \"order_number\": \"SO20260605005\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"cancelled\",\n        \"total_amount\": 250.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"WEBCAM-1080P\", \"name\": \"1080P\u7f51\u7edc\u6444\u50cf\u5934\", \"qty\": 1, \"price\": 250.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=5)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=4)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260606-006\",\n        \"order_number\": \"SO20260606006\",\n        \"customer_name\": \"\u5b59\u4e03\",\n        \"customer_email\": \"sunqi@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 15900.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MBP-16-M3\", \"name\": \"MacBook Pro 16 M3\", \"qty\": 1, \"price\": 15900.00},\n        ],\n        \"shipping_address\": \"\u676d\u5dde\u5e02\u897f\u6e56\u533a\u6587\u4e09\u8def478\u53f7\",\n        \"created_at\": (NOW - timedelta(days=7)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=5)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260607-007\",\n        \"order_number\": \"SO20260607007\",\n        \"customer_name\": \"\u5468\u516b\",\n        \"customer_email\": \"zhouba@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 3200.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"CHAIR-ERG\", \"name\": \"\u4eba\u4f53\u5de5\u5b66\u6905\", \"qty\": 1, \"price\": 3200.00},\n        ],\n        \"shipping_address\": \"\u6210\u90fd\u5e02\u6b66\u4faf\u533a\u4eba\u6c11\u5357\u8def\u56db\u6bb5\",\n        \"created_at\": (NOW - timedelta(days=1, hours=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=3)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260608-008\",\n        \"order_number\": \"SO20260608008\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 780.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"SSD-1TB-NVME\", \"name\": \"1TB NVMe\u56fa\u6001\u786c\u76d8\", \"qty\": 1, \"price\": 780.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=2)).isoformat(),\n    },\n]\n\nVALID_STATUSES = {\"pending\", \"shipped\", \"delivered\", \"cancelled\"}\n\n\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\n\ndef _match_order(order: dict, query: str) -> bool:\n    \"\"\"Check if an order matches a search query across all text fields.\"\"\"\n    q = query.lower()\n    return (\n        q in order[\"order_number\"].lower()\n        or q in order[\"customer_name\"].lower()\n        or q in order[\"customer_email\"].lower()\n        or q in str(order[\"total_amount\"])\n        or any(q in item[\"name\"].lower() for item in order[\"items\"])\n        or any(q in item[\"sku\"].lower() for item in order[\"items\"])\n    )\n\n\ndef _filter_by_date(orders: list[dict], start: str, end: str) -> list[dict]:\n    \"\"\"Filter orders by created_at date range (inclusive).\"\"\"\n    try:\n        start_dt = datetime.fromisoformat(start)\n        end_dt = datetime.fromisoformat(end).replace(hour=23, minute=59, second=59)\n    except (ValueError, TypeError):\n        return orders\n    return [\n        o\n        for o in orders\n        if start_dt <= datetime.fromisoformat(o[\"created_at\"]) <= end_dt\n    ]\n\n\n# ---------------------------------------------------------------------------\n# Endpoints\n# ---------------------------------------------------------------------------\n\n@app.get(\"/api/orders/search\")\ndef search_orders(\n    q: str = Query(..., description=\"Search keyword\"),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Search orders by keyword across order number, customer, item name, etc.\"\"\"\n    results = [o for o in ORDERS if _match_order(o, q)]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/stats\")\ndef get_order_stats(\n    period: str = Query(\"today\", description=\"today|yesterday|this_week|this_month|all\"),\n):\n    \"\"\"Get aggregate order statistics.\"\"\"\n    now = datetime.now()\n    start = now.replace(hour=0, minute=0, second=0, microsecond=0)\n\n    if period == \"yesterday\":\n        start = start - timedelta(days=1)\n    elif period == \"this_week\":\n        start = start - timedelta(days=start.weekday())\n    elif period == \"this_month\":\n        start = start.replace(day=1)\n    elif period == \"last_month\":\n        first = start.replace(day=1)\n        start = (first - timedelta(days=1)).replace(day=1)\n    elif period == \"all\":\n        start = datetime(2000, 1, 1)\n\n    filtered = [o for o in ORDERS if datetime.fromisoformat(o[\"created_at\"]) >= start]\n\n    by_status: dict[str, int] = {}\n    total_revenue = 0.0\n    for o in filtered:\n        by_status[o[\"status\"]] = by_status.get(o[\"status\"], 0) + 1\n        if o[\"status\"] != \"cancelled\":\n            total_revenue += o[\"total_amount\"]\n\n    return {\n        \"period\": period,\n        \"total_count\": len(filtered),\n        \"total_revenue\": round(total_revenue, 2),\n        \"by_status\": by_status,\n    }\n\n\n@app.get(\"/api/orders/by-customer\")\ndef get_orders_by_customer(\n    customer: str = Query(...),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    q = customer.lower()\n    results = [\n        o\n        for o in ORDERS\n        if q in o[\"customer_name\"].lower() or q in o[\"customer_email\"].lower()\n    ]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/{order_id}\")\ndef get_order(order_id: str):\n    \"\"\"Fetch a single order by ID, including line items and totals.\"\"\"\n    for o in ORDERS:\n        if o[\"id\"] == order_id:\n            return o\n    raise HTTPException(status_code=404, detail=f\"Order '{order_id}' not found\")\n\n\n@app.get(\"/api/orders\")\ndef list_orders(\n    status: str = Query(\"all\", description=\"pending|shipped|delivered|cancelled|all\"),\n    limit: int = Query(20, ge=1, le=100),\n    offset: int = Query(0, ge=0),\n    start_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n    end_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n):\n    \"\"\"List orders with optional status and date-range filtering.\"\"\"\n    results = ORDERS\n\n    if status != \"all\":\n        results = [o for o in results if o[\"status\"] == status]\n\n    if start_date and end_date:\n        results = _filter_by_date(results, start_date, end_date)\n\n    total = len(results)\n    paged = results[offset : offset + limit]\n\n    return {\"data\": paged, \"total\": total, \"offset\": offset, \"limit\": limit}\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"mcp-order-server\"\nversion = \"0.1.0\"\ndescription = \"MCP server for querying an order REST API\"\nrequires-python = \">=3.10\"\ndependencies = [\n    \"fastmcp>=3.0.0\",\n    \"httpx>=0.27.0\",\n    \"fastapi>=0.100.0\",\n    \"uvicorn[standard]>=0.30.0\",\n]\n\n[project.scripts]\norder-server = \"server:main\"\n"}, {"name": "server.py", "type": "text", "content": "\"\"\"\nMCP server exposing the order REST API as typed tools for AI agents.\n\nRun with: python server.py   (stdio transport, for Claude Code / Claude Desktop)\n\nThe agent sees 6 read-only tools: search_orders, get_order, list_orders,\nget_orders_by_date, get_orders_by_customer, get_order_stats.\n\"\"\"\n\nimport json\n\nfrom fastmcp import FastMCP\n\nimport api_client\n\nmcp = FastMCP(\n    name=\"order-server\",\n    version=\"0.1.0\",\n    instructions=(\n        \"This server queries a local order database. \"\n        \"Use search_orders to find orders by keyword when you don't have an exact ID. \"\n        \"Use get_order to fetch full details once you have an order ID. \"\n        \"Use list_orders to browse with optional status filtering. \"\n        \"Use get_order_stats first for an overview of what's in the system.\"\n    ),\n)\n\n\n# ---------------------------------------------------------------------------\n# Tools - one per API endpoint\n# ---------------------------------------------------------------------------\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Search orders\",\n    },\n)\nasync def search_orders(query: str, limit: int = 20) -> str:\n    \"\"\"Search orders by keyword - matches across order number, customer name,\n    and other text fields.  Returns up to `limit` results.\n\n    Use this as a first step when you don't have an exact order ID.  Once you\n    find the right order, call get_order with its ID for full details.\n    \"\"\"\n    results = await api_client.search_orders(query, limit)\n    if not results:\n        return f\"No orders matching '{query}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order by ID\",\n    },\n)\nasync def get_order(order_id: str) -> str:\n    \"\"\"Fetch a single order by its unique ID.  Returns the full order record\n    including line items, totals, customer info, and status.\n\n    If you don't know the ID, use search_orders or list_orders first.\n    \"\"\"\n    order = await api_client.get_order(order_id)\n    if order is None:\n        return f\"Order '{order_id}' not found. Use search_orders to find valid IDs.\"\n    return json.dumps(order, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"List orders\",\n    },\n)\nasync def list_orders(status: str = \"all\", limit: int = 20, offset: int = 0) -> str:\n    \"\"\"List orders with optional status filtering and pagination.\n\n    `status` accepts values like \"pending\", \"shipped\", \"delivered\", \"cancelled\",\n    or \"all\" (default) to include every status.\n    Use `offset` to page through results (e.g. 0, then 20, then 40).\n    \"\"\"\n    data = await api_client.list_orders(status, limit, offset)\n    orders = data if isinstance(data, list) else data.get(\"data\", [])\n    total = data if isinstance(data, list) else data.get(\"total\", len(orders))\n\n    if not orders:\n        return f\"No orders found (status={status}, offset={offset}).\"\n\n    out = {\n        \"total\": total,\n        \"returned\": len(orders),\n        \"offset\": offset,\n        \"orders\": orders,\n    }\n    return json.dumps(out, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by date range\",\n    },\n)\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> str:\n    \"\"\"Get orders created within a date range.  Dates must be ISO format\n    (YYYY-MM-DD, e.g. \"2026-01-01\").  The range is inclusive.\n\n    Use this when you need orders from a specific time window - for example\n    \"all orders from last week\" or \"orders placed in Q1\".\n    \"\"\"\n    results = await api_client.get_orders_by_date(start_date, end_date, limit)\n    if not results:\n        return f\"No orders between {start_date} and {end_date}.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by customer\",\n    },\n)\nasync def get_orders_by_customer(customer: str, limit: int = 20) -> str:\n    \"\"\"Get orders placed by a specific customer.  `customer` can be a name,\n    email, or customer ID - the API matches partial inputs.\n\n    If you only have a partial name, this still works.  Use search_orders\n    as an alternative when you're not sure whether the text is a customer name\n    or an order number.\n    \"\"\"\n    results = await api_client.get_orders_by_customer(customer, limit)\n    if not results:\n        return f\"No orders found for customer '{customer}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order statistics\",\n    },\n)\nasync def get_order_stats(period: str = \"today\") -> str:\n    \"\"\"Get aggregate order statistics for a time period.\n\n    `period` accepts: \"today\", \"yesterday\", \"this_week\", \"this_month\",\n    \"last_month\", or \"all\".\n    Returns total count, total revenue, and a breakdown by order status.\n    Call this first for a high-level overview before drilling into details.\n    \"\"\"\n    stats = await api_client.get_order_stats(period)\n    return json.dumps(stats, ensure_ascii=False, indent=2)\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\n\ndef main():\n    \"\"\"Run the MCP server over stdio (default for Claude Desktop / Claude Code).\"\"\"\n    mcp.run()\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}]}}, {"id": "eval-1-without_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBPcmRlciBNQ1AgU2VydmVyIC0tIGVudmlyb25tZW50IGNvbmZpZ3VyYXRpb24KIyBUaGUgc2VydmVyIHBhdGggYmVsb3cgaXMgdXNlZCBieSBDbGF1ZGUgQ29kZSB0byBsYXVuY2ggdGhlIE1DUCBwcm9jZXNzLgpPUkRFUl9NQ1BfU0VSVkVSX1BBVEg9c2VydmVyLnB5Cg=="}, {"name": "api_client.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nStand-alone CLI client for the order API -- useful for testing without MCP.\n\nUsage\n-----\n  python api_client.py search <keyword>\n  python api_client.py get <order_id>\n  python api_client.py list [--status <status>] [--limit <n>] [--offset <n>]\n  python api_client.py customer <name>\n  python api_client.py date <start> <end>\n  python api_client.py stats [--period <period>]\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport sys\n\nfrom order_api import (\n    get_order,\n    search_orders,\n    list_orders,\n    get_orders_by_customer,\n    get_orders_by_date,\n    get_order_stats,\n)\n\n\ndef _print(data: object) -> None:\n    print(json.dumps(data, ensure_ascii=False, indent=2))\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(description=\"Order API CLI client\")\n    sub = parser.add_subparsers(dest=\"command\", required=True)\n\n    # search\n    p_search = sub.add_parser(\"search\", help=\"Search orders by keyword\")\n    p_search.add_argument(\"query\", help=\"Keyword to search for\")\n    p_search.add_argument(\"--limit\", type=int, default=20)\n\n    # get\n    p_get = sub.add_parser(\"get\", help=\"Get a single order by ID\")\n    p_get.add_argument(\"order_id\", help=\"Order ID (e.g. ORD-1001)\")\n\n    # list\n    p_list = sub.add_parser(\"list\", help=\"List orders\")\n    p_list.add_argument(\"--status\", default=\"all\")\n    p_list.add_argument(\"--limit\", type=int, default=20)\n    p_list.add_argument(\"--offset\", type=int, default=0)\n\n    # customer\n    p_cust = sub.add_parser(\"customer\", help=\"Get orders by customer\")\n    p_cust.add_argument(\"customer\", help=\"Customer name, email, or ID\")\n    p_cust.add_argument(\"--limit\", type=int, default=20)\n\n    # date\n    p_date = sub.add_parser(\"date\", help=\"Get orders by date range\")\n    p_date.add_argument(\"start_date\", help=\"Start date (YYYY-MM-DD)\")\n    p_date.add_argument(\"end_date\", help=\"End date (YYYY-MM-DD)\")\n    p_date.add_argument(\"--limit\", type=int, default=50)\n\n    # stats\n    p_stats = sub.add_parser(\"stats\", help=\"Get order statistics\")\n    p_stats.add_argument(\"--period\", default=\"all\")\n\n    args = parser.parse_args()\n\n    if args.command == \"search\":\n        _print(search_orders(args.query, limit=args.limit))\n    elif args.command == \"get\":\n        result = get_order(args.order_id)\n        _print(result if result else {\"error\": f\"Order '{args.order_id}' not found.\"})\n    elif args.command == \"list\":\n        _print(list_orders(status=args.status, limit=args.limit, offset=args.offset))\n    elif args.command == \"customer\":\n        _print(get_orders_by_customer(args.customer, limit=args.limit))\n    elif args.command == \"date\":\n        _print(get_orders_by_date(args.start_date, args.end_date, limit=args.limit))\n    elif args.command == \"stats\":\n        _print(get_order_stats(period=args.period))\n\n\nif __name__ == \"__main__\":\n    main()\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nIn-memory order database with query functions.\n\nProvides a simple order store with seed data and functions to search,\nlist, and retrieve orders.  All data lives in memory -- no external\ndatabase required.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport copy\nfrom datetime import datetime, timedelta\nfrom typing import Any\n\n# ---------------------------------------------------------------------------\n# Seed data\n# ---------------------------------------------------------------------------\n\n_SEED_ORDERS: list[dict[str, Any]] = [\n    {\n        \"order_id\": \"ORD-1001\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"delivered\",\n        \"amount\": 299.00,\n        \"items\": [\"\u65e0\u7ebf\u8033\u673a\", \"\u5145\u7535\u7ebf\"],\n        \"created_at\": \"2026-06-01T10:30:00\",\n    },\n    {\n        \"order_id\": \"ORD-1002\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"shipped\",\n        \"amount\": 1599.50,\n        \"items\": [\"\u673a\u68b0\u952e\u76d8\", \"\u9f20\u6807\u57ab\"],\n        \"created_at\": \"2026-06-03T14:15:00\",\n    },\n    {\n        \"order_id\": \"ORD-1003\",\n        \"customer_name\": \"\u738b\u4e94\",\n        \"customer_email\": \"wangwu@example.com\",\n        \"status\": \"pending\",\n        \"amount\": 89.00,\n        \"items\": [\"USB \u96c6\u7ebf\u5668\"],\n        \"created_at\": \"2026-06-08T09:00:00\",\n    },\n    {\n        \"order_id\": \"ORD-1004\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"pending\",\n        \"amount\": 450.00,\n        \"items\": [\"\u663e\u793a\u5668\u652f\u67b6\", \"\u684c\u9762\u53f0\u706f\"],\n        \"created_at\": \"2026-06-10T16:45:00\",\n    },\n    {\n        \"order_id\": \"ORD-1005\",\n        \"customer_name\": \"\u8d75\u516d\",\n        \"customer_email\": \"zhaoliu@example.com\",\n        \"status\": \"cancelled\",\n        \"amount\": 1280.00,\n        \"items\": [\"27\u5bf8\u663e\u793a\u5668\"],\n        \"created_at\": \"2026-06-05T11:20:00\",\n    },\n    {\n        \"order_id\": \"ORD-1006\",\n        \"customer_name\": \"\u5b59\u4e03\",\n        \"customer_email\": \"sunqi@example.com\",\n        \"status\": \"delivered\",\n        \"amount\": 59.90,\n        \"items\": [\"\u7b14\u8bb0\u672c\u6563\u70ed\u67b6\"],\n        \"created_at\": \"2026-06-02T08:00:00\",\n    },\n    {\n        \"order_id\": \"ORD-1007\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"shipped\",\n        \"amount\": 349.00,\n        \"items\": [\"\u84dd\u7259\u97f3\u7bb1\"],\n        \"created_at\": \"2026-06-09T13:30:00\",\n    },\n    {\n        \"order_id\": \"ORD-1008\",\n        \"customer_name\": \"\u5468\u516b\",\n        \"customer_email\": \"zhouba@example.com\",\n        \"status\": \"delivered\",\n        \"amount\": 2199.00,\n        \"items\": [\"\u529e\u516c\u6905\", \"\u5347\u964d\u684c\"],\n        \"created_at\": \"2026-06-04T15:00:00\",\n    },\n]\n\n# In-memory store -- a shallow copy of the seed data so callers get their\n# own list to mutate without side effects.\n_orders: list[dict[str, Any]] = copy.deepcopy(_SEED_ORDERS)\n\n\n# ---------------------------------------------------------------------------\n# Public query API\n# ---------------------------------------------------------------------------\n\ndef get_order(order_id: str) -> dict[str, Any] | None:\n    \"\"\"Return a single order by its ID, or None if not found.\"\"\"\n    for order in _orders:\n        if order[\"order_id\"] == order_id:\n            return copy.deepcopy(order)\n    return None\n\n\ndef search_orders(query: str, limit: int = 20) -> list[dict[str, Any]]:\n    \"\"\"Search orders by keyword -- matches order_id, customer_name, and\n    customer_email (case-insensitive partial match).\"\"\"\n    q = query.lower()\n    results: list[dict[str, Any]] = []\n    for order in _orders:\n        if (\n            q in order[\"order_id\"].lower()\n            or q in order[\"customer_name\"].lower()\n            or q in order[\"customer_email\"].lower()\n        ):\n            results.append(copy.deepcopy(order))\n            if len(results) >= limit:\n                break\n    return results\n\n\ndef list_orders(\n    status: str = \"all\", limit: int = 20, offset: int = 0\n) -> list[dict[str, Any]]:\n    \"\"\"List orders with optional status filter and pagination.\"\"\"\n    if status == \"all\":\n        filtered = list(_orders)\n    else:\n        filtered = [o for o in _orders if o[\"status\"] == status]\n\n    page = filtered[offset : offset + limit]\n    return copy.deepcopy(page)\n\n\ndef get_orders_by_customer(customer: str, limit: int = 20) -> list[dict[str, Any]]:\n    \"\"\"Get orders for a customer by name, email, or ID (partial match).\"\"\"\n    c = customer.lower()\n    results: list[dict[str, Any]] = []\n    for order in _orders:\n        if (\n            c in order[\"customer_name\"].lower()\n            or c in order[\"customer_email\"].lower()\n            or c in order[\"order_id\"].lower()  # in case they pass an order ID\n        ):\n            results.append(copy.deepcopy(order))\n            if len(results) >= limit:\n                break\n    return results\n\n\ndef get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders created within a date range (inclusive, ISO format).\"\"\"\n    results: list[dict[str, Any]] = []\n    for order in _orders:\n        created = order[\"created_at\"][:10]  # \"YYYY-MM-DD\"\n        if start_date <= created <= end_date:\n            results.append(copy.deepcopy(order))\n            if len(results) >= limit:\n                break\n    return results\n\n\ndef get_order_stats(period: str = \"today\") -> dict[str, Any]:\n    \"\"\"Return aggregate statistics for a given period.\n\n    ``period`` accepts: \"today\", \"yesterday\", \"this_week\", \"this_month\",\n    \"last_month\", or \"all\".\n    \"\"\"\n    now = datetime.now()\n    start: datetime\n\n    if period == \"today\":\n        start = now.replace(hour=0, minute=0, second=0, microsecond=0)\n    elif period == \"yesterday\":\n        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)\n        start = today_start - timedelta(days=1)\n        end = today_start\n    elif period == \"this_week\":\n        start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(\n            days=now.weekday()\n        )\n    elif period == \"this_month\":\n        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)\n    elif period == \"last_month\":\n        first_of_this = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)\n        start = (first_of_this - timedelta(days=1)).replace(day=1)\n        end = first_of_this\n    else:  # \"all\"\n        start = datetime.min\n\n    # Filter orders within the period\n    if period == \"yesterday\":\n        filtered = [\n            o\n            for o in _orders\n            if start.isoformat()[:10] <= o[\"created_at\"][:10] < end.isoformat()[:10]\n        ]\n    elif period == \"last_month\":\n        filtered = [\n            o\n            for o in _orders\n            if start.isoformat()[:10] <= o[\"created_at\"][:10] < end.isoformat()[:10]\n        ]\n    elif period == \"all\":\n        filtered = list(_orders)\n    else:\n        start_str = start.strftime(\"%Y-%m-%d\")\n        filtered = [o for o in _orders if o[\"created_at\"][:10] >= start_str]\n\n    total_count = len(filtered)\n    total_revenue = sum(o[\"amount\"] for o in filtered)\n\n    status_breakdown: dict[str, int] = {}\n    for o in filtered:\n        status_breakdown[o[\"status\"]] = status_breakdown.get(o[\"status\"], 0) + 1\n\n    return {\n        \"period\": period,\n        \"total_orders\": total_count,\n        \"total_revenue\": round(total_revenue, 2),\n        \"status_breakdown\": status_breakdown,\n    }\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"order-mcp-server\"\nversion = \"1.0.0\"\ndescription = \"A simple MCP server for querying orders with in-memory storage\"\nrequires-python = \">=3.10\"\ndependencies = [\n    \"mcp>=1.0.0\",\n    \"python-dotenv>=1.0.0\",\n]\n\n[project.scripts]\norder-mcp = \"server:main\"\n\n[build-system]\nrequires = [\"setuptools>=68.0\"]\nbuild-backend = \"setuptools.build_meta\"\n"}, {"name": "server.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nMCP server that exposes order-query tools via stdio transport.\n\nRun this script directly and register it with Claude Code (or any MCP\nclient) to let an AI agent query the in-memory order store.\n\nTools exposed\n-------------\n- search_orders      : keyword search across order_id / customer_name / email\n- get_order          : fetch a single order by its ID\n- list_orders        : paginated list with optional status filter\n- get_orders_by_customer : orders for a given customer (partial match)\n- get_orders_by_date     : orders within an ISO date range\n- get_order_stats        : aggregate stats for a period\n\"\"\"\n\nfrom __future__ import annotations\n\nimport asyncio\nimport json\nimport sys\nfrom typing import Any\n\nfrom mcp.server import Server, NotificationOptions\nfrom mcp.server.models import InitializationCapabilities\nfrom mcp.server.stdio import stdio_server\nfrom mcp.types import Tool, TextContent\n\n# ---------------------------------------------------------------------------\n# Import the in-memory order API\n# ---------------------------------------------------------------------------\ntry:\n    from order_api import (\n        get_order,\n        search_orders,\n        list_orders,\n        get_orders_by_customer,\n        get_orders_by_date,\n        get_order_stats,\n    )\nexcept ImportError:\n    # When running from a different working directory\n    sys.path.insert(0, \".\")\n    from order_api import (  # type: ignore[no-redef]\n        get_order,\n        search_orders,\n        list_orders,\n        get_orders_by_customer,\n        get_orders_by_date,\n        get_order_stats,\n    )\n\n\n# ---------------------------------------------------------------------------\n# MCP server setup\n# ---------------------------------------------------------------------------\n\nserver = Server(\"order-server\")\n\n\n# ---------------------------------------------------------------------------\n# Tool definitions (for discovery)\n# ---------------------------------------------------------------------------\n\nTOOL_DEFINITIONS = [\n    Tool(\n        name=\"search_orders\",\n        description=\"Search orders by keyword -- matches across order number, \"\n        \"customer name, and other text fields.  Returns up to `limit` results.\\n\\n\"\n        \"Use this as a first step when you don't have an exact order ID.  Once you \"\n        \"find the right order, call get_order with its ID for full details.\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"query\": {\n                    \"type\": \"string\",\n                    \"description\": \"The search keyword to look for in orders.\",\n                },\n                \"limit\": {\n                    \"type\": \"integer\",\n                    \"description\": \"Maximum number of results to return.\",\n                    \"default\": 20,\n                },\n            },\n            \"required\": [\"query\"],\n        },\n    ),\n    Tool(\n        name=\"get_order\",\n        description=\"Fetch a single order by its unique ID.  Returns the full \"\n        \"order record including line items, totals, customer info, and status.\\n\\n\"\n        \"If you don't know the ID, use search_orders or list_orders first.\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"order_id\": {\n                    \"type\": \"string\",\n                    \"description\": \"The unique order ID (e.g. ORD-1001).\",\n                },\n            },\n            \"required\": [\"order_id\"],\n        },\n    ),\n    Tool(\n        name=\"list_orders\",\n        description=\"List orders with optional status filtering and pagination.\\n\\n\"\n        \"`status` accepts values like \\\"pending\\\", \\\"shipped\\\", \\\"delivered\\\", \"\n        \"\\\"cancelled\\\", or \\\"all\\\" (default) to include every status.\\n\"\n        \"Use `offset` to page through results (e.g. 0, then 20, then 40).\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"status\": {\n                    \"type\": \"string\",\n                    \"description\": \"Filter by order status, or \\\"all\\\" for every status.\",\n                    \"default\": \"all\",\n                },\n                \"limit\": {\n                    \"type\": \"integer\",\n                    \"description\": \"Page size.\",\n                    \"default\": 20,\n                },\n                \"offset\": {\n                    \"type\": \"integer\",\n                    \"description\": \"Zero-based offset for pagination.\",\n                    \"default\": 0,\n                },\n            },\n        },\n    ),\n    Tool(\n        name=\"get_orders_by_customer\",\n        description=\"Get orders placed by a specific customer.  `customer` can be \"\n        \"a name, email, or customer ID -- the API matches partial inputs.\\n\\n\"\n        \"If you only have a partial name, this still works.  Use search_orders \"\n        \"as an alternative when you're not sure whether the text is a customer name \"\n        \"or an order number.\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"customer\": {\n                    \"type\": \"string\",\n                    \"description\": \"Customer name, email, or ID (partial match supported).\",\n                },\n                \"limit\": {\n                    \"type\": \"integer\",\n                    \"description\": \"Maximum number of results to return.\",\n                    \"default\": 20,\n                },\n            },\n            \"required\": [\"customer\"],\n        },\n    ),\n    Tool(\n        name=\"get_orders_by_date\",\n        description=\"Get orders created within a date range.  Dates must be ISO \"\n        \"format (YYYY-MM-DD, e.g. \\\"2026-01-01\\\").  The range is inclusive.\\n\\n\"\n        \"Use this when you need orders from a specific time window -- for example \"\n        \"\\\"all orders from last week\\\" or \\\"orders placed in Q1\\\".\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"start_date\": {\n                    \"type\": \"string\",\n                    \"description\": \"Start date in ISO format (YYYY-MM-DD), inclusive.\",\n                },\n                \"end_date\": {\n                    \"type\": \"string\",\n                    \"description\": \"End date in ISO format (YYYY-MM-DD), inclusive.\",\n                },\n                \"limit\": {\n                    \"type\": \"integer\",\n                    \"description\": \"Maximum number of results to return.\",\n                    \"default\": 50,\n                },\n            },\n            \"required\": [\"start_date\", \"end_date\"],\n        },\n    ),\n    Tool(\n        name=\"get_order_stats\",\n        description=\"Get aggregate order statistics for a time period.\\n\\n\"\n        \"`period` accepts: \\\"today\\\", \\\"yesterday\\\", \\\"this_week\\\", \\\"this_month\\\", \"\n        \"\\\"last_month\\\", or \\\"all\\\".\\n\"\n        \"Returns total count, total revenue, and a breakdown by order status.\\n\"\n        \"Call this first for a high-level overview before drilling into details.\",\n        inputSchema={\n            \"type\": \"object\",\n            \"properties\": {\n                \"period\": {\n                    \"type\": \"string\",\n                    \"description\": \"Time period for statistics.\",\n                    \"default\": \"today\",\n                },\n            },\n        },\n    ),\n]\n\n\n# ---------------------------------------------------------------------------\n# Tool handler registry\n# ---------------------------------------------------------------------------\n\n@server.list_tools()\nasync def handle_list_tools() -> list[Tool]:\n    \"\"\"Return the list of tools this server provides.\"\"\"\n    return TOOL_DEFINITIONS\n\n\n@server.call_tool()\nasync def handle_call_tool(\n    name: str, arguments: dict[str, Any]\n) -> list[TextContent]:\n    \"\"\"Dispatch tool calls to the appropriate handler.\"\"\"\n    try:\n        if name == \"search_orders\":\n            results = search_orders(\n                query=arguments[\"query\"],\n                limit=arguments.get(\"limit\", 20),\n            )\n            return [TextContent(type=\"text\", text=json.dumps(results, ensure_ascii=False, indent=2))]\n\n        elif name == \"get_order\":\n            order = get_order(order_id=arguments[\"order_id\"])\n            if order is None:\n                return [TextContent(\n                    type=\"text\",\n                    text=json.dumps({\"error\": f\"Order '{arguments['order_id']}' not found.\"}, ensure_ascii=False),\n                )]\n            return [TextContent(type=\"text\", text=json.dumps(order, ensure_ascii=False, indent=2))]\n\n        elif name == \"list_orders\":\n            results = list_orders(\n                status=arguments.get(\"status\", \"all\"),\n                limit=arguments.get(\"limit\", 20),\n                offset=arguments.get(\"offset\", 0),\n            )\n            return [TextContent(type=\"text\", text=json.dumps(results, ensure_ascii=False, indent=2))]\n\n        elif name == \"get_orders_by_customer\":\n            results = get_orders_by_customer(\n                customer=arguments[\"customer\"],\n                limit=arguments.get(\"limit\", 20),\n            )\n            return [TextContent(type=\"text\", text=json.dumps(results, ensure_ascii=False, indent=2))]\n\n        elif name == \"get_orders_by_date\":\n            results = get_orders_by_date(\n                start_date=arguments[\"start_date\"],\n                end_date=arguments[\"end_date\"],\n                limit=arguments.get(\"limit\", 50),\n            )\n            return [TextContent(type=\"text\", text=json.dumps(results, ensure_ascii=False, indent=2))]\n\n        elif name == \"get_order_stats\":\n            stats = get_order_stats(period=arguments.get(\"period\", \"today\"))\n            return [TextContent(type=\"text\", text=json.dumps(stats, ensure_ascii=False, indent=2))]\n\n        else:\n            return [TextContent(\n                type=\"text\",\n                text=json.dumps({\"error\": f\"Unknown tool: {name}\"}, ensure_ascii=False),\n            )]\n\n    except Exception as exc:\n        return [TextContent(\n            type=\"text\",\n            text=json.dumps({\"error\": str(exc)}, ensure_ascii=False),\n        )]\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\nasync def main() -> None:\n    \"\"\"Run the MCP server over stdio.\"\"\"\n    async with stdio_server() as (read_stream, write_stream):\n        await server.run(\n            read_stream,\n            write_stream,\n            InitializationCapabilities(\n                sampling={},\n                experimental={},\n                roots={},\n            ),\n            notification_options=NotificationOptions(\n                tools_changed=False,\n                resources_changed=False,\n                prompts_changed=False,\n            ),\n        )\n\n\nif __name__ == \"__main__\":\n    asyncio.run(main())\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": false, "evidence": "no FastAPI"}, {"text": "has_api_client", "passed": false, "evidence": "no httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": false, "evidence": "no deps"}, {"text": "has_env_file", "passed": false, "evidence": "no API URL"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": false, "evidence": "API has 0 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "11 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}]}}, {"id": "eval-2-with_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,QVBJX0JBU0VfVVJMPWh0dHA6Ly9sb2NhbGhvc3Q6ODAwMAo="}, {"name": "api_client.py", "type": "text", "content": "\"\"\"\nHTTP client for the local order REST API.\n\nReads API_BASE_URL and optional API_KEY from environment variables.\nAll functions return dicts/lists ready for JSON serialization.\n\nAdd retry logic, caching, or auth middleware here without touching the MCP layer.\n\"\"\"\n\nimport os\nfrom typing import Any\n\nimport httpx\n\nBASE_URL = os.getenv(\"API_BASE_URL\", \"http://localhost:8000\")\nAPI_KEY = os.getenv(\"API_KEY\", \"\")\n\n\ndef _headers() -> dict[str, str]:\n    \"\"\"Build request headers, including auth if API_KEY is set.\"\"\"\n    h = {\"Accept\": \"application/json\"}\n    if API_KEY:\n        h[\"Authorization\"] = f\"Bearer {API_KEY}\"\n    return h\n\n\nasync def _get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:\n    \"\"\"Send a GET request to the order API. Returns the parsed JSON body.\"\"\"\n    url = f\"{BASE_URL.rstrip('/')}{path}\"\n    async with httpx.AsyncClient(timeout=30) as client:\n        resp = await client.get(url, headers=_headers(), params=params)\n        resp.raise_for_status()\n        return resp.json()\n\n\nasync def search_orders(query: str, limit: int = 20) -> list[dict[str, Any]]:\n    \"\"\"Search orders by keyword across order number, customer name, etc.\"\"\"\n    data = await _get(\"/api/orders/search\", {\"q\": query, \"limit\": limit})\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order(order_id: str) -> dict[str, Any] | None:\n    \"\"\"Fetch a single order by its ID. Returns None if not found.\"\"\"\n    try:\n        return await _get(f\"/api/orders/{order_id}\")\n    except httpx.HTTPStatusError as e:\n        if e.response.status_code == 404:\n            return None\n        raise\n\n\nasync def list_orders(\n    status: str = \"all\", limit: int = 20, offset: int = 0\n) -> dict[str, Any]:\n    \"\"\"List orders, optionally filtered by status.\"\"\"\n    params: dict[str, Any] = {\"limit\": limit, \"offset\": offset}\n    if status != \"all\":\n        params[\"status\"] = status\n    return await _get(\"/api/orders\", params)\n\n\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders within a date range (ISO format: YYYY-MM-DD).\"\"\"\n    data = await _get(\n        \"/api/orders\",\n        {\"start_date\": start_date, \"end_date\": end_date, \"limit\": limit},\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_orders_by_customer(\n    customer: str, limit: int = 20\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    data = await _get(\n        \"/api/orders/by-customer\", {\"customer\": customer, \"limit\": limit}\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order_stats(period: str = \"today\") -> dict[str, Any]:\n    \"\"\"Get aggregate stats: total count, revenue, breakdown by status.\"\"\"\n    return await _get(\"/api/orders/stats\", {\"period\": period})\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nOrder REST API \u2014 FastAPI app with in-memory sample data.\n\nRun with: uvicorn order_api:app --reload --port 8000\n\nReplace the ORDERS list with your database (SQLite, Postgres, etc.).\n\"\"\"\n\nfrom datetime import datetime, timedelta\nfrom typing import Any\n\nfrom fastapi import FastAPI, HTTPException, Query\n\napp = FastAPI(title=\"Order API\", version=\"0.1.0\")\n\n# ---------------------------------------------------------------------------\n# Sample data \u2014 replace with your database\n# ---------------------------------------------------------------------------\n\nNOW = datetime.now()\n\nORDERS: list[dict[str, Any]] = [\n    {\n        \"id\": \"ORD-20260601-001\",\n        \"order_number\": \"SO20260601001\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 1280.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"LAPTOP-BAG-01\", \"name\": \"\u7b14\u8bb0\u672c\u7535\u8111\u5305\", \"qty\": 2, \"price\": 180.00},\n            {\"sku\": \"MOUSE-WL-02\", \"name\": \"\u65e0\u7ebf\u9f20\u6807\", \"qty\": 4, \"price\": 230.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260602-002\",\n        \"order_number\": \"SO20260602002\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 5600.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MONITOR-27-4K\", \"name\": \"27\u5bf84K\u663e\u793a\u5668\", \"qty\": 1, \"price\": 4200.00},\n            {\"sku\": \"HDMI-CBL-2M\", \"name\": \"HDMI\u7ebf2\u7c73\", \"qty\": 2, \"price\": 700.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(days=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=12)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260603-003\",\n        \"order_number\": \"SO20260603003\",\n        \"customer_name\": \"\u738b\u4e94\",\n        \"customer_email\": \"wangwu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 350.50,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"USB-HUB-7\", \"name\": \"7\u53e3USB\u96c6\u7ebf\u5668\", \"qty\": 1, \"price\": 180.50},\n            {\"sku\": \"CABLE-TYPE-C\", \"name\": \"Type-C\u6570\u636e\u7ebf\", \"qty\": 5, \"price\": 170.00},\n        ],\n        \"shipping_address\": \"\u5e7f\u5dde\u5e02\u5929\u6cb3\u533a\u5929\u6cb3\u8def385\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=6)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=6)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260604-004\",\n        \"order_number\": \"SO20260604004\",\n        \"customer_name\": \"\u8d75\u516d\",\n        \"customer_email\": \"zhaoliu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 8999.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MECH-KB-RGB\", \"name\": \"\u673a\u68b0\u952e\u76d8RGB\", \"qty\": 3, \"price\": 1999.00},\n            {\"sku\": \"MOUSE-PAD-XL\", \"name\": \"\u8d85\u5927\u9f20\u6807\u57ab\", \"qty\": 3, \"price\": 1000.00},\n        ],\n        \"shipping_address\": \"\u6df1\u5733\u5e02\u5357\u5c71\u533a\u79d1\u6280\u56ed\u5357\u8def\",\n        \"created_at\": (NOW - timedelta(days=1)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260605-005\",\n        \"order_number\": \"SO20260605005\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"cancelled\",\n        \"total_amount\": 250.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"WEBCAM-1080P\", \"name\": \"1080P\u7f51\u7edc\u6444\u50cf\u5934\", \"qty\": 1, \"price\": 250.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=5)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=4)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260606-006\",\n        \"order_number\": \"SO20260606006\",\n        \"customer_name\": \"\u5b59\u4e03\",\n        \"customer_email\": \"sunqi@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 15900.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MBP-16-M3\", \"name\": \"MacBook Pro 16 M3\", \"qty\": 1, \"price\": 15900.00},\n        ],\n        \"shipping_address\": \"\u676d\u5dde\u5e02\u897f\u6e56\u533a\u6587\u4e09\u8def478\u53f7\",\n        \"created_at\": (NOW - timedelta(days=7)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=5)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260607-007\",\n        \"order_number\": \"SO20260607007\",\n        \"customer_name\": \"\u5468\u516b\",\n        \"customer_email\": \"zhouba@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 3200.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"CHAIR-ERG\", \"name\": \"\u4eba\u4f53\u5de5\u5b66\u6905\", \"qty\": 1, \"price\": 3200.00},\n        ],\n        \"shipping_address\": \"\u6210\u90fd\u5e02\u6b66\u4faf\u533a\u4eba\u6c11\u5357\u8def\u56db\u6bb5\",\n        \"created_at\": (NOW - timedelta(days=1, hours=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=3)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260608-008\",\n        \"order_number\": \"SO20260608008\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 780.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"SSD-1TB-NVME\", \"name\": \"1TB NVMe\u56fa\u6001\u786c\u76d8\", \"qty\": 1, \"price\": 780.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=2)).isoformat(),\n    },\n]\n\nVALID_STATUSES = {\"pending\", \"shipped\", \"delivered\", \"cancelled\"}\n\n\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\n\ndef _match_order(order: dict, query: str) -> bool:\n    \"\"\"Check if an order matches a search query across all text fields.\"\"\"\n    q = query.lower()\n    return (\n        q in order[\"order_number\"].lower()\n        or q in order[\"customer_name\"].lower()\n        or q in order[\"customer_email\"].lower()\n        or q in str(order[\"total_amount\"])\n        or any(q in item[\"name\"].lower() for item in order[\"items\"])\n        or any(q in item[\"sku\"].lower() for item in order[\"items\"])\n    )\n\n\ndef _filter_by_date(orders: list[dict], start: str, end: str) -> list[dict]:\n    \"\"\"Filter orders by created_at date range (inclusive).\"\"\"\n    try:\n        start_dt = datetime.fromisoformat(start)\n        end_dt = datetime.fromisoformat(end).replace(hour=23, minute=59, second=59)\n    except (ValueError, TypeError):\n        return orders\n    return [\n        o\n        for o in orders\n        if start_dt <= datetime.fromisoformat(o[\"created_at\"]) <= end_dt\n    ]\n\n\n# ---------------------------------------------------------------------------\n# Endpoints\n# ---------------------------------------------------------------------------\n\n\n@app.get(\"/api/orders/search\")\ndef search_orders(\n    q: str = Query(..., description=\"Search keyword\"),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Search orders by keyword across order number, customer, item name, etc.\"\"\"\n    results = [o for o in ORDERS if _match_order(o, q)]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/stats\")\ndef get_order_stats(\n    period: str = Query(\"today\", description=\"today|yesterday|this_week|this_month|all\"),\n):\n    \"\"\"Get aggregate order statistics.\"\"\"\n    now = datetime.now()\n    start = now.replace(hour=0, minute=0, second=0, microsecond=0)\n\n    if period == \"yesterday\":\n        start = start - timedelta(days=1)\n    elif period == \"this_week\":\n        start = start - timedelta(days=start.weekday())\n    elif period == \"this_month\":\n        start = start.replace(day=1)\n    elif period == \"last_month\":\n        first = start.replace(day=1)\n        start = (first - timedelta(days=1)).replace(day=1)\n    elif period == \"all\":\n        start = datetime(2000, 1, 1)\n\n    filtered = [o for o in ORDERS if datetime.fromisoformat(o[\"created_at\"]) >= start]\n\n    by_status: dict[str, int] = {}\n    total_revenue = 0.0\n    for o in filtered:\n        by_status[o[\"status\"]] = by_status.get(o[\"status\"], 0) + 1\n        if o[\"status\"] != \"cancelled\":\n            total_revenue += o[\"total_amount\"]\n\n    return {\n        \"period\": period,\n        \"total_count\": len(filtered),\n        \"total_revenue\": round(total_revenue, 2),\n        \"by_status\": by_status,\n    }\n\n\n@app.get(\"/api/orders/by-customer\")\ndef get_orders_by_customer(\n    customer: str = Query(...),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    q = customer.lower()\n    results = [\n        o\n        for o in ORDERS\n        if q in o[\"customer_name\"].lower() or q in o[\"customer_email\"].lower()\n    ]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/{order_id}\")\ndef get_order(order_id: str):\n    \"\"\"Fetch a single order by ID, including line items and totals.\"\"\"\n    for o in ORDERS:\n        if o[\"id\"] == order_id:\n            return o\n    raise HTTPException(status_code=404, detail=f\"Order '{order_id}' not found\")\n\n\n@app.get(\"/api/orders\")\ndef list_orders(\n    status: str = Query(\"all\", description=\"pending|shipped|delivered|cancelled|all\"),\n    limit: int = Query(20, ge=1, le=100),\n    offset: int = Query(0, ge=0),\n    start_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n    end_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n):\n    \"\"\"List orders with optional status and date-range filtering.\"\"\"\n    results = ORDERS\n\n    if status != \"all\":\n        results = [o for o in results if o[\"status\"] == status]\n\n    if start_date and end_date:\n        results = _filter_by_date(results, start_date, end_date)\n\n    total = len(results)\n    paged = results[offset : offset + limit]\n\n    return {\"data\": paged, \"total\": total, \"offset\": offset, \"limit\": limit}\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"mcp-order-server\"\nversion = \"0.1.0\"\ndescription = \"MCP server for querying an order REST API\"\nrequires-python = \">=3.10\"\ndependencies = [\n    \"fastmcp>=3.0.0\",\n    \"httpx>=0.27.0\",\n    \"fastapi>=0.100.0\",\n    \"uvicorn[standard]>=0.30.0\",\n]\n\n[project.scripts]\norder-server = \"server:main\"\n"}, {"name": "server.py", "type": "text", "content": "\"\"\"\nMCP server exposing the order REST API as typed tools for AI agents.\n\nRun with: python server.py   (stdio transport, for Claude Code / Claude Desktop)\n\nThe agent sees 6 read-only tools: search_orders, get_order, list_orders,\nget_orders_by_date, get_orders_by_customer, get_order_stats.\n\"\"\"\n\nimport json\n\nfrom fastmcp import FastMCP\n\nimport api_client\n\nmcp = FastMCP(\n    name=\"order-server\",\n    version=\"0.1.0\",\n    instructions=(\n        \"This server queries a local order database. \"\n        \"Use search_orders to find orders by keyword when you don't have an exact ID. \"\n        \"Use get_order to fetch full details once you have an order ID. \"\n        \"Use list_orders to browse with optional status filtering. \"\n        \"Use get_order_stats first for an overview of what's in the system.\"\n    ),\n)\n\n\n# ---------------------------------------------------------------------------\n# Tools - one per API endpoint\n# ---------------------------------------------------------------------------\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Search orders\",\n    },\n)\nasync def search_orders(query: str, limit: int = 20) -> str:\n    \"\"\"Search orders by keyword - matches across order number, customer name,\n    and other text fields.  Returns up to `limit` results.\n\n    Use this as a first step when you don't have an exact order ID.  Once you\n    find the right order, call get_order with its ID for full details.\n    \"\"\"\n    results = await api_client.search_orders(query, limit)\n    if not results:\n        return f\"No orders matching '{query}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order by ID\",\n    },\n)\nasync def get_order(order_id: str) -> str:\n    \"\"\"Fetch a single order by its unique ID.  Returns the full order record\n    including line items, totals, customer info, and status.\n\n    If you don't know the ID, use search_orders or list_orders first.\n    \"\"\"\n    order = await api_client.get_order(order_id)\n    if order is None:\n        return f\"Order '{order_id}' not found. Use search_orders to find valid IDs.\"\n    return json.dumps(order, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"List orders\",\n    },\n)\nasync def list_orders(status: str = \"all\", limit: int = 20, offset: int = 0) -> str:\n    \"\"\"List orders with optional status filtering and pagination.\n\n    `status` accepts values like \"pending\", \"shipped\", \"delivered\", \"cancelled\",\n    or \"all\" (default) to include every status.\n    Use `offset` to page through results (e.g. 0, then 20, then 40).\n    \"\"\"\n    data = await api_client.list_orders(status, limit, offset)\n    orders = data if isinstance(data, list) else data.get(\"data\", [])\n    total = data if isinstance(data, list) else data.get(\"total\", len(orders))\n\n    if not orders:\n        return f\"No orders found (status={status}, offset={offset}).\"\n\n    out = {\n        \"total\": total,\n        \"returned\": len(orders),\n        \"offset\": offset,\n        \"orders\": orders,\n    }\n    return json.dumps(out, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by date range\",\n    },\n)\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> str:\n    \"\"\"Get orders created within a date range.  Dates must be ISO format\n    (YYYY-MM-DD, e.g. \"2026-01-01\").  The range is inclusive.\n\n    Use this when you need orders from a specific time window - for example\n    \"all orders from last week\" or \"orders placed in Q1\".\n    \"\"\"\n    results = await api_client.get_orders_by_date(start_date, end_date, limit)\n    if not results:\n        return f\"No orders between {start_date} and {end_date}.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by customer\",\n    },\n)\nasync def get_orders_by_customer(customer: str, limit: int = 20) -> str:\n    \"\"\"Get orders placed by a specific customer.  `customer` can be a name,\n    email, or customer ID - the API matches partial inputs.\n\n    If you only have a partial name, this still works.  Use search_orders\n    as an alternative when you're not sure whether the text is a customer name\n    or an order number.\n    \"\"\"\n    results = await api_client.get_orders_by_customer(customer, limit)\n    if not results:\n        return f\"No orders found for customer '{customer}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order statistics\",\n    },\n)\nasync def get_order_stats(period: str = \"today\") -> str:\n    \"\"\"Get aggregate order statistics for a time period.\n\n    `period` accepts: \"today\", \"yesterday\", \"this_week\", \"this_month\",\n    \"last_month\", or \"all\".\n    Returns total count, total revenue, and a breakdown by order status.\n    Call this first for a high-level overview before drilling into details.\n    \"\"\"\n    stats = await api_client.get_order_stats(period)\n    return json.dumps(stats, ensure_ascii=False, indent=2)\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\n\ndef main():\n    \"\"\"Run the MCP server over stdio (default for Claude Desktop / Claude Code).\"\"\"\n    mcp.run()\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}]}}, {"id": "eval-2-without_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBPcmRlciBNYW5hZ2VtZW50IEFQSSAvIE1DUCBTZXJ2ZXIgY29uZmlndXJhdGlvbgoKIyBUaGUgYmFzZSBVUkwgb2YgdGhlIFJFU1QgQVBJICh1c2VkIGJ5IHRoZSBNQ1Agc2VydmVyIHdoZW4gdGFsa2luZyB0byB0aGUgQVBJKS4KIyBJbiBwcm9kdWN0aW9uIG1vZGUsIHN0YXJ0IG9yZGVyX2FwaS5weSBmaXJzdCBvbiB0aGlzIGhvc3Q6cG9ydCwgdGhlbiBzdGFydCBzZXJ2ZXIucHkuCk9SREVSX0FQSV9VUkw9aHR0cDovLzEyNy4wLjAuMTo4MDgwCgojIEhvc3QgYW5kIHBvcnQgZm9yIHRoZSBBUEkgc2VydmVyIGl0c2VsZiAob25seSB1c2VkIHdoZW4gcnVubmluZyBvcmRlcl9hcGkucHkgZGlyZWN0bHkpLgpPUkRFUl9BUElfSE9TVD0xMjcuMC4wLjEKT1JERVJfQVBJX1BPUlQ9ODA4MAo="}, {"name": "api_client.py", "type": "text", "content": "\"\"\"\nSynchronous HTTP client for the Order Management REST API.\n\nUsage::\n\n    from api_client import OrderApiClient\n\n    client = OrderApiClient()                         # reads ORDER_API_URL from env\n    client = OrderApiClient(base_url=\"http://localhost:8080\")\n\n    # List orders with filters\n    resp = client.list_orders(search=\"Acme\", limit=10)\n    for order in resp[\"orders\"]:\n        print(order[\"order_number\"], order[\"total\"])\n\n    # Single order\n    order = client.get_order(\"ORD-1001\")\n\n    # By customer\n    resp = client.get_orders_by_customer(\"Globex\")\n\n    # By date range\n    resp = client.get_orders_by_date(\"2026-05-01\", \"2026-05-31\")\n\n    # Stats\n    stats = client.get_order_stats(\"this_month\")\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nfrom datetime import date\nfrom typing import Any, Optional\n\nimport httpx\n\n\nclass OrderApiError(Exception):\n    \"\"\"Raised when the API returns a non-2xx status.\"\"\"\n\n\nclass OrderApiClient:\n    \"\"\"Thin wrapper around the order-management REST API.\"\"\"\n\n    def __init__(self, base_url: Optional[str] = None) -> None:\n        self.base_url = (base_url or os.environ.get(\"ORDER_API_URL\", \"http://127.0.0.1:8080\")).rstrip(\"/\")\n        self._client = httpx.Client(timeout=httpx.Timeout(30.0))\n\n    # -- helpers ---------------------------------------------------------\n\n    def _get(self, path: str, params: Optional[dict] = None) -> dict[str, Any]:\n        url = f\"{self.base_url}{path}\"\n        resp = self._client.get(url, params=params)\n        if resp.status_code >= 400:\n            raise OrderApiError(f\"{resp.status_code} {resp.reason_phrase}: {resp.text}\")\n        return resp.json()\n\n    # -- public methods ---------------------------------------------------\n\n    def list_orders(\n        self,\n        search: Optional[str] = None,\n        customer: Optional[str] = None,\n        start_date: Optional[str] = None,\n        end_date: Optional[str] = None,\n        status: str = \"all\",\n        limit: int = 20,\n        offset: int = 0,\n    ) -> dict[str, Any]:\n        \"\"\"Search and filter orders.\"\"\"\n        params: dict[str, Any] = {\"status\": status, \"limit\": limit, \"offset\": offset}\n        if search:\n            params[\"search\"] = search\n        if customer:\n            params[\"customer\"] = customer\n        if start_date:\n            params[\"start_date\"] = start_date\n        if end_date:\n            params[\"end_date\"] = end_date\n        return self._get(\"/orders\", params)\n\n    def get_order(self, order_id: str) -> dict[str, Any]:\n        \"\"\"Fetch a single order by ID.\"\"\"\n        return self._get(f\"/orders/{order_id}\")\n\n    def get_orders_by_customer(self, customer: str, limit: int = 20) -> dict[str, Any]:\n        \"\"\"List orders for a given customer (partial match).\"\"\"\n        return self._get(\"/orders\", {\"customer\": customer, \"limit\": limit})\n\n    def get_orders_by_date(self, start_date: str, end_date: str, limit: int = 50) -> dict[str, Any]:\n        \"\"\"List orders within a date range (ISO dates, inclusive).\"\"\"\n        return self._get(\"/orders\", {\"start_date\": start_date, \"end_date\": end_date, \"limit\": limit})\n\n    def get_order_stats(self, period: str = \"all\") -> dict[str, Any]:\n        \"\"\"Get aggregate statistics for a time period.\"\"\"\n        return self._get(\"/stats\", {\"period\": period})\n\n    def close(self) -> None:\n        self._client.close()\n\n    def __enter__(self) -> \"OrderApiClient\":\n        return self\n\n    def __exit__(self, *args: Any) -> None:\n        self.close()\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nOrder Management REST API with FastAPI.\n\nEndpoints:\n  GET /orders         -- list/search/filter orders\n  GET /orders/{id}    -- get a single order by ID\n  GET /stats          -- aggregate order statistics\n\nQuery parameters for GET /orders:\n  search    : keyword match across order number, customer name, notes\n  customer  : filter by customer name/email (partial match)\n  start_date: ISO date, inclusive (YYYY-MM-DD)\n  end_date  : ISO date, inclusive (YYYY-MM-DD)\n  status    : pending | shipped | delivered | cancelled | all (default)\n  limit     : results per page (default 20, max 100)\n  offset    : pagination offset (default 0)\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nfrom datetime import date, datetime\nfrom typing import Optional\n\nfrom fastapi import FastAPI, Query, HTTPException\nfrom pydantic import BaseModel\n\n# ---------------------------------------------------------------------------\n# Sample data\n# ---------------------------------------------------------------------------\n\nSAMPLE_ORDERS: list[dict] = [\n    {\n        \"id\": \"ORD-1001\",\n        \"order_number\": \"ORD-1001\",\n        \"customer_name\": \"Acme Corp\",\n        \"customer_email\": \"orders@acmecorp.com\",\n        \"status\": \"delivered\",\n        \"created_at\": \"2026-05-01T10:30:00\",\n        \"updated_at\": \"2026-05-05T14:00:00\",\n        \"total\": 1499.97,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"WDG-001\", \"name\": \"Widget Pro\", \"qty\": 3, \"unit_price\": 499.99},\n        ],\n        \"notes\": \"Standard delivery, left at front door\",\n    },\n    {\n        \"id\": \"ORD-1002\",\n        \"order_number\": \"ORD-1002\",\n        \"customer_name\": \"Globex Industries\",\n        \"customer_email\": \"procurement@globex.com\",\n        \"status\": \"shipped\",\n        \"created_at\": \"2026-05-15T09:15:00\",\n        \"updated_at\": \"2026-05-16T11:00:00\",\n        \"total\": 8750.00,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"SRV-200\", \"name\": \"Server Rack 42U\", \"qty\": 5, \"unit_price\": 1750.00},\n        ],\n        \"notes\": \"Loading dock delivery required\",\n    },\n    {\n        \"id\": \"ORD-1003\",\n        \"order_number\": \"ORD-1003\",\n        \"customer_name\": \"Initech\",\n        \"customer_email\": \"admin@initech.com\",\n        \"status\": \"pending\",\n        \"created_at\": \"2026-06-01T08:00:00\",\n        \"updated_at\": \"2026-06-01T08:00:00\",\n        \"total\": 299.50,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"CBL-050\", \"name\": \"USB-C Cable 2m\", \"qty\": 10, \"unit_price\": 14.99},\n            {\"sku\": \"ADP-010\", \"name\": \"Power Adapter 65W\", \"qty\": 5, \"unit_price\": 29.99},\n        ],\n        \"notes\": \"\",\n    },\n    {\n        \"id\": \"ORD-1004\",\n        \"order_number\": \"ORD-1004\",\n        \"customer_name\": \"Acme Corp\",\n        \"customer_email\": \"orders@acmecorp.com\",\n        \"status\": \"pending\",\n        \"created_at\": \"2026-06-10T16:45:00\",\n        \"updated_at\": \"2026-06-10T16:45:00\",\n        \"total\": 6200.00,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"LAP-300\", \"name\": \"Laptop 15\\\" i7\", \"qty\": 4, \"unit_price\": 1550.00},\n        ],\n        \"notes\": \"Rush order -- needed by Friday\",\n    },\n    {\n        \"id\": \"ORD-1005\",\n        \"order_number\": \"ORD-1005\",\n        \"customer_name\": \"Umbrella Corp\",\n        \"customer_email\": \"sales@umbrellacorp.biz\",\n        \"status\": \"cancelled\",\n        \"created_at\": \"2026-05-20T12:00:00\",\n        \"updated_at\": \"2026-05-21T09:30:00\",\n        \"total\": 420.00,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"MON-015\", \"name\": \"Monitor Stand\", \"qty\": 12, \"unit_price\": 35.00},\n        ],\n        \"notes\": \"Cancelled by customer -- duplicate order\",\n    },\n    {\n        \"id\": \"ORD-1006\",\n        \"order_number\": \"ORD-1006\",\n        \"customer_name\": \"Globex Industries\",\n        \"customer_email\": \"procurement@globex.com\",\n        \"status\": \"delivered\",\n        \"created_at\": \"2026-04-10T07:30:00\",\n        \"updated_at\": \"2026-04-14T10:00:00\",\n        \"total\": 3400.00,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"SWT-001\", \"name\": \"Network Switch 48-port\", \"qty\": 2, \"unit_price\": 1700.00},\n        ],\n        \"notes\": \"Installed in server room B\",\n    },\n    {\n        \"id\": \"ORD-1007\",\n        \"order_number\": \"ORD-1007\",\n        \"customer_name\": \"Initech\",\n        \"customer_email\": \"admin@initech.com\",\n        \"status\": \"shipped\",\n        \"created_at\": \"2026-06-05T14:20:00\",\n        \"updated_at\": \"2026-06-06T08:00:00\",\n        \"total\": 189.90,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"MOU-007\", \"name\": \"Ergonomic Mouse\", \"qty\": 3, \"unit_price\": 63.30},\n        ],\n        \"notes\": \"\",\n    },\n    {\n        \"id\": \"ORD-1008\",\n        \"order_number\": \"ORD-1008\",\n        \"customer_name\": \"Hooli\",\n        \"customer_email\": \"purchasing@hooli.com\",\n        \"status\": \"delivered\",\n        \"created_at\": \"2026-03-28T11:00:00\",\n        \"updated_at\": \"2026-04-02T16:00:00\",\n        \"total\": 12500.00,\n        \"currency\": \"USD\",\n        \"items\": [\n            {\"sku\": \"SRV-400\", \"name\": \"GPU Server Node\", \"qty\": 1, \"unit_price\": 12500.00},\n        ],\n        \"notes\": \"White-glove installation requested\",\n    },\n]\n\n# ---------------------------------------------------------------------------\n# FastAPI application\n# ---------------------------------------------------------------------------\n\napp = FastAPI(\n    title=\"Order Management API\",\n    version=\"1.0.0\",\n    description=\"REST API for searching, filtering, and managing orders.\",\n)\n\n\n# ----- Models -----\n\nclass OrderItem(BaseModel):\n    sku: str\n    name: str\n    qty: int\n    unit_price: float\n\n\nclass Order(BaseModel):\n    id: str\n    order_number: str\n    customer_name: str\n    customer_email: str\n    status: str\n    created_at: str\n    updated_at: str\n    total: float\n    currency: str\n    items: list[OrderItem]\n    notes: str\n\n\nclass OrderListResponse(BaseModel):\n    total: int\n    limit: int\n    offset: int\n    orders: list[Order]\n\n\nclass StatsResponse(BaseModel):\n    period: str\n    total_orders: int\n    total_revenue: float\n    by_status: dict[str, int]\n\n\n# ----- Helpers -----\n\ndef _match_order(order: dict, search: Optional[str], customer: Optional[str],\n                 start_date: Optional[date], end_date: Optional[date],\n                 status: Optional[str]) -> bool:\n    \"\"\"Return True if *order* satisfies all filter criteria.\"\"\"\n    # Status filter\n    if status and status != \"all\":\n        if order[\"status\"] != status:\n            return False\n\n    # Keyword search in order_number, customer_name, notes\n    if search:\n        q = search.lower()\n        haystack = \" \".join([\n            order[\"order_number\"],\n            order[\"customer_name\"],\n            order[\"notes\"],\n        ]).lower()\n        if q not in haystack:\n            return False\n\n    # Customer filter (partial match on name or email)\n    if customer:\n        c = customer.lower()\n        if c not in order[\"customer_name\"].lower() and c not in order[\"customer_email\"].lower():\n            return False\n\n    # Date range filter (created_at)\n    order_date = datetime.fromisoformat(order[\"created_at\"]).date()\n    if start_date and order_date < start_date:\n        return False\n    if end_date and order_date > end_date:\n        return False\n\n    return True\n\n\n# ----- Endpoints -----\n\n@app.get(\"/orders\", response_model=OrderListResponse)\ndef list_orders(\n    search: Optional[str] = Query(None, description=\"Keyword search across order number, customer, notes\"),\n    customer: Optional[str] = Query(None, description=\"Filter by customer name or email (partial match)\"),\n    start_date: Optional[date] = Query(None, description=\"Earliest creation date (ISO, inclusive)\"),\n    end_date: Optional[date] = Query(None, description=\"Latest creation date (ISO, inclusive)\"),\n    status: Optional[str] = Query(\"all\", description=\"Order status: pending|shipped|delivered|cancelled|all\"),\n    limit: int = Query(20, ge=1, le=100, description=\"Results per page\"),\n    offset: int = Query(0, ge=0, description=\"Pagination offset\"),\n):\n    matched = [\n        o for o in SAMPLE_ORDERS\n        if _match_order(o, search, customer, start_date, end_date, status)\n    ]\n    page = matched[offset : offset + limit]\n    return OrderListResponse(\n        total=len(matched),\n        limit=limit,\n        offset=offset,\n        orders=[Order(**o) for o in page],\n    )\n\n\n@app.get(\"/orders/{order_id}\", response_model=Order)\ndef get_order(order_id: str):\n    for o in SAMPLE_ORDERS:\n        if o[\"id\"] == order_id:\n            return Order(**o)\n    raise HTTPException(status_code=404, detail=f\"Order '{order_id}' not found\")\n\n\n@app.get(\"/stats\", response_model=StatsResponse)\ndef get_stats(\n    period: str = Query(\"all\", description=\"Period: today|yesterday|this_week|this_month|last_month|all\"),\n):\n    now = datetime.utcnow().date()\n    today = now\n\n    if period == \"today\":\n        start = today\n        end = today\n    elif period == \"yesterday\":\n        from datetime import timedelta\n        start = end = today - timedelta(days=1)\n    elif period == \"this_week\":\n        from datetime import timedelta\n        start = today - timedelta(days=today.weekday())\n        end = today\n    elif period == \"this_month\":\n        start = today.replace(day=1)\n        end = today\n    elif period == \"last_month\":\n        first_of_this = today.replace(day=1)\n        from datetime import timedelta\n        last_day_prev = first_of_this - timedelta(days=1)\n        start = last_day_prev.replace(day=1)\n        end = last_day_prev\n    else:  # \"all\"\n        start = date.min\n        end = date.max\n\n    filtered = []\n    for o in SAMPLE_ORDERS:\n        order_date = datetime.fromisoformat(o[\"created_at\"]).date()\n        if start <= order_date <= end:\n            filtered.append(o)\n\n    by_status: dict[str, int] = {}\n    total_rev = 0.0\n    for o in filtered:\n        by_status[o[\"status\"]] = by_status.get(o[\"status\"], 0) + 1\n        total_rev += o[\"total\"]\n\n    return StatsResponse(\n        period=period,\n        total_orders=len(filtered),\n        total_revenue=round(total_rev, 2),\n        by_status=by_status,\n    )\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\ndef main() -> None:\n    import uvicorn\n    host = os.environ.get(\"ORDER_API_HOST\", \"127.0.0.1\")\n    port = int(os.environ.get(\"ORDER_API_PORT\", \"8080\"))\n    uvicorn.run(\"order_api:app\", host=host, port=port, reload=True)\n\n\nif __name__ == \"__main__\":\n    main()\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"order-management-mcp\"\nversion = \"1.0.0\"\ndescription = \"Order management REST API + MCP server wrapper\"\nrequires-python = \">=3.10\"\ndependencies = [\n    \"fastapi>=0.115.0\",\n    \"uvicorn[standard]>=0.30.0\",\n    \"httpx>=0.27.0\",\n    \"mcp>=1.0.0\",\n    \"pydantic>=2.0.0\",\n    \"python-dotenv>=1.0.0\",\n]\n\n[project.optional-dependencies]\ndev = [\n    \"pytest>=8.0\",\n    \"pytest-asyncio>=0.24\",\n]\n\n[build-system]\nrequires = [\"setuptools>=75.0\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[tool.setuptools.packages.find]\ninclude = [\".\"]\n"}, {"name": "server.py", "type": "text", "content": "\"\"\"\nMCP Server for the Order Management API.\n\nWraps the REST API as MCP tools so Claude (or any MCP host) can\nsearch, filter, and inspect orders.\n\nRun via stdio transport (default for MCP)::\n\n    python server.py\n\nOr point it at a custom API host::\n\n    ORDER_API_URL=http://localhost:8080 python server.py\n\nTools exposed:\n\n  search_orders         -- keyword search across orders\n  get_order             -- fetch a single order by ID\n  get_orders_by_customer-- filter by customer name/email\n  get_orders_by_date    -- filter by date range\n  list_orders           -- paginated list with optional status filter\n  get_order_stats       -- aggregate statistics for a period\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport os\nimport sys\nfrom typing import Any\n\nfrom mcp.server import Server\nfrom mcp.server.stdio import stdio_server\n\nfrom api_client import OrderApiClient, OrderApiError\n\n# ---------------------------------------------------------------------------\n# MCP server setup\n# ---------------------------------------------------------------------------\n\nserver = Server(\"order-management\")\n\n# Lazily-initialised client -- reuse across tool calls\n_client: OrderApiClient | None = None\n\n\ndef _get_client() -> OrderApiClient:\n    global _client\n    if _client is None:\n        _client = OrderApiClient()\n    return _client\n\n\n# ---------------------------------------------------------------------------\n# Tools\n# ---------------------------------------------------------------------------\n\n@server.tool()\ndef search_orders(query: str, limit: int = 20) -> str:\n    \"\"\"Search orders by keyword -- matches across order number, customer name,\n    and notes.  Returns up to `limit` results.\n\n    Use this as a first step when you don't have an exact order ID.  Once you\n    find the right order, call get_order with its ID for full details.\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.list_orders(search=query, limit=limit)\n        return _format_list(data)\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n@server.tool()\ndef get_order(order_id: str) -> str:\n    \"\"\"Fetch a single order by its unique ID.  Returns the full order record\n    including line items, totals, customer info, and status.\n\n    If you don't know the ID, use search_orders or list_orders first.\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.get_order(order_id)\n        return _format_order(data)\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n@server.tool()\ndef get_orders_by_customer(customer: str, limit: int = 20) -> str:\n    \"\"\"Get orders placed by a specific customer.  `customer` can be a name,\n    email, or customer ID -- the API matches partial inputs.\n\n    If you only have a partial name, this still works.  Use search_orders\n    as an alternative when you're not sure whether the text is a customer name\n    or an order number.\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.get_orders_by_customer(customer, limit=limit)\n        return _format_list(data)\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n@server.tool()\ndef get_orders_by_date(start_date: str, end_date: str, limit: int = 50) -> str:\n    \"\"\"Get orders created within a date range.  Dates must be ISO format\n    (YYYY-MM-DD, e.g. \\\"2026-01-01\\\").  The range is inclusive.\n\n    Use this when you need orders from a specific time window -- for example\n    \\\"all orders from last week\\\" or \\\"orders placed in Q1\\\".\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.get_orders_by_date(start_date, end_date, limit=limit)\n        return _format_list(data)\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n@server.tool()\ndef list_orders(status: str = \"all\", limit: int = 20, offset: int = 0) -> str:\n    \"\"\"List orders with optional status filtering and pagination.\n\n    `status` accepts values like \\\"pending\\\", \\\"shipped\\\", \\\"delivered\\\", \\\"cancelled\\\",\n    or \\\"all\\\" (default) to include every status.\n    Use `offset` to page through results (e.g. 0, then 20, then 40).\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.list_orders(status=status, limit=limit, offset=offset)\n        return _format_list(data)\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n@server.tool()\ndef get_order_stats(period: str = \"today\") -> str:\n    \"\"\"Get aggregate order statistics for a time period.\n\n    `period` accepts: \\\"today\\\", \\\"yesterday\\\", \\\"this_week\\\", \\\"this_month\\\",\n    \\\"last_month\\\", or \\\"all\\\".\n    Returns total count, total revenue, and a breakdown by order status.\n    Call this first for a high-level overview before drilling into details.\n    \"\"\"\n    client = _get_client()\n    try:\n        data = client.get_order_stats(period)\n        formatted = (\n            f\"Period: {data['period']}\\n\"\n            f\"Total orders: {data['total_orders']}\\n\"\n            f\"Total revenue: ${data['total_revenue']:,.2f}\\n\"\n            f\"By status:\\n\"\n        )\n        for status, count in sorted(data.get(\"by_status\", {}).items()):\n            formatted += f\"  - {status}: {count}\\n\"\n        return formatted\n    except OrderApiError as exc:\n        return f\"API error: {exc}\"\n\n\n# ---------------------------------------------------------------------------\n# Formatting helpers\n# ---------------------------------------------------------------------------\n\ndef _format_list(data: dict[str, Any]) -> str:\n    total = data[\"total\"]\n    offset = data[\"offset\"]\n    orders = data[\"orders\"]\n    page_size = len(orders)\n\n    if not orders:\n        return f\"No orders found (total: {total}).\"\n\n    lines = [f\"Showing {offset + 1}-{offset + page_size} of {total} orders:\\n\"]\n    for o in orders:\n        lines.append(_format_order_summary(o))\n    return \"\\n\".join(lines)\n\n\ndef _format_order_summary(o: dict[str, Any]) -> str:\n    return (\n        f\"  {o['order_number']} | {o['status']:>9} | \"\n        f\"${o['total']:>10,.2f} | \"\n        f\"{o['customer_name']} | {o['created_at'][:10]}\"\n    )\n\n\ndef _format_order(data: dict[str, Any]) -> str:\n    lines = [\n        f\"Order: {data['order_number']}\",\n        f\"Status: {data['status']}\",\n        f\"Customer: {data['customer_name']} <{data['customer_email']}>\",\n        f\"Created: {data['created_at']}\",\n        f\"Updated: {data['updated_at']}\",\n        f\"Total: ${data['total']:,.2f} {data['currency']}\",\n        f\"Notes: {data['notes'] or '(none)'}\",\n        \"\",\n        \"Items:\",\n    ]\n    for item in data[\"items\"]:\n        lines.append(\n            f\"  {item['sku']}  {item['name']}  \"\n            f\"qty {item['qty']}  @ ${item['unit_price']:.2f}  = \"\n            f\"${item['qty'] * item['unit_price']:.2f}\"\n        )\n    return \"\\n\".join(lines)\n\n\n# ---------------------------------------------------------------------------\n# Entry point -- stdio transport\n# ---------------------------------------------------------------------------\n\nasync def main() -> None:\n    async with stdio_server() as (read_stream, write_stream):\n        await server.run(read_stream, write_stream, server.create_initialization_options())\n\n\nif __name__ == \"__main__\":\n    import asyncio\n    asyncio.run(main())\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": false, "evidence": "API has 3 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}]}}, {"id": "eval-3-with_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,QVBJX0JBU0VfVVJMPWh0dHA6Ly9sb2NhbGhvc3Q6ODAwMAo="}, {"name": "api_client.py", "type": "text", "content": "\"\"\"\nHTTP client for the local order REST API.\n\nReads API_BASE_URL and optional API_KEY from environment variables.\nAll functions return dicts/lists ready for JSON serialization.\n\nAdd retry logic, caching, or auth middleware here without touching the MCP layer.\n\"\"\"\n\nimport os\nfrom typing import Any\n\nimport httpx\n\nBASE_URL = os.getenv(\"API_BASE_URL\", \"http://localhost:8000\")\nAPI_KEY = os.getenv(\"API_KEY\", \"\")\n\n\ndef _headers() -> dict[str, str]:\n    \"\"\"Build request headers, including auth if API_KEY is set.\"\"\"\n    h = {\"Accept\": \"application/json\"}\n    if API_KEY:\n        h[\"Authorization\"] = f\"Bearer {API_KEY}\"\n    return h\n\n\nasync def _get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:\n    \"\"\"Send a GET request to the order API. Returns the parsed JSON body.\"\"\"\n    url = f\"{BASE_URL.rstrip('/')}{path}\"\n    async with httpx.AsyncClient(timeout=30) as client:\n        resp = await client.get(url, headers=_headers(), params=params)\n        resp.raise_for_status()\n        return resp.json()\n\n\nasync def search_orders(query: str, limit: int = 20) -> list[dict[str, Any]]:\n    \"\"\"Search orders by keyword across order number, customer name, etc.\"\"\"\n    data = await _get(\"/api/orders/search\", {\"q\": query, \"limit\": limit})\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order(order_id: str) -> dict[str, Any] | None:\n    \"\"\"Fetch a single order by its ID. Returns None if not found.\"\"\"\n    try:\n        return await _get(f\"/api/orders/{order_id}\")\n    except httpx.HTTPStatusError as e:\n        if e.response.status_code == 404:\n            return None\n        raise\n\n\nasync def list_orders(\n    status: str = \"all\", limit: int = 20, offset: int = 0\n) -> dict[str, Any]:\n    \"\"\"List orders, optionally filtered by status.\"\"\"\n    params: dict[str, Any] = {\"limit\": limit, \"offset\": offset}\n    if status != \"all\":\n        params[\"status\"] = status\n    return await _get(\"/api/orders\", params)\n\n\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders within a date range (ISO format: YYYY-MM-DD).\"\"\"\n    data = await _get(\n        \"/api/orders\",\n        {\"start_date\": start_date, \"end_date\": end_date, \"limit\": limit},\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_orders_by_customer(\n    customer: str, limit: int = 20\n) -> list[dict[str, Any]]:\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    data = await _get(\n        \"/api/orders/by-customer\", {\"customer\": customer, \"limit\": limit}\n    )\n    return data if isinstance(data, list) else data.get(\"data\", [])\n\n\nasync def get_order_stats(period: str = \"today\") -> dict[str, Any]:\n    \"\"\"Get aggregate stats: total count, revenue, breakdown by status.\"\"\"\n    return await _get(\"/api/orders/stats\", {\"period\": period})\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nOrder REST API \u2014 FastAPI app with in-memory sample data.\n\nRun with: uvicorn order_api:app --reload --port 8000\n\nReplace the ORDERS list with your database (SQLite, Postgres, etc.).\n\"\"\"\n\nfrom datetime import datetime, timedelta\nfrom typing import Any\n\nfrom fastapi import FastAPI, HTTPException, Query\n\napp = FastAPI(title=\"Order API\", version=\"0.1.0\")\n\n# ---------------------------------------------------------------------------\n# Sample data \u2014 replace with your database\n# ---------------------------------------------------------------------------\n\nNOW = datetime.now()\n\nORDERS: list[dict[str, Any]] = [\n    {\n        \"id\": \"ORD-20260601-001\",\n        \"order_number\": \"SO20260601001\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 1280.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"LAPTOP-BAG-01\", \"name\": \"\u7b14\u8bb0\u672c\u7535\u8111\u5305\", \"qty\": 2, \"price\": 180.00},\n            {\"sku\": \"MOUSE-WL-02\", \"name\": \"\u65e0\u7ebf\u9f20\u6807\", \"qty\": 4, \"price\": 230.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260602-002\",\n        \"order_number\": \"SO20260602002\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 5600.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MONITOR-27-4K\", \"name\": \"27\u5bf84K\u663e\u793a\u5668\", \"qty\": 1, \"price\": 4200.00},\n            {\"sku\": \"HDMI-CBL-2M\", \"name\": \"HDMI\u7ebf2\u7c73\", \"qty\": 2, \"price\": 700.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(days=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=12)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260603-003\",\n        \"order_number\": \"SO20260603003\",\n        \"customer_name\": \"\u738b\u4e94\",\n        \"customer_email\": \"wangwu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 350.50,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"USB-HUB-7\", \"name\": \"7\u53e3USB\u96c6\u7ebf\u5668\", \"qty\": 1, \"price\": 180.50},\n            {\"sku\": \"CABLE-TYPE-C\", \"name\": \"Type-C\u6570\u636e\u7ebf\", \"qty\": 5, \"price\": 170.00},\n        ],\n        \"shipping_address\": \"\u5e7f\u5dde\u5e02\u5929\u6cb3\u533a\u5929\u6cb3\u8def385\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=6)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=6)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260604-004\",\n        \"order_number\": \"SO20260604004\",\n        \"customer_name\": \"\u8d75\u516d\",\n        \"customer_email\": \"zhaoliu@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 8999.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MECH-KB-RGB\", \"name\": \"\u673a\u68b0\u952e\u76d8RGB\", \"qty\": 3, \"price\": 1999.00},\n            {\"sku\": \"MOUSE-PAD-XL\", \"name\": \"\u8d85\u5927\u9f20\u6807\u57ab\", \"qty\": 3, \"price\": 1000.00},\n        ],\n        \"shipping_address\": \"\u6df1\u5733\u5e02\u5357\u5c71\u533a\u79d1\u6280\u56ed\u5357\u8def\",\n        \"created_at\": (NOW - timedelta(days=1)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=1)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260605-005\",\n        \"order_number\": \"SO20260605005\",\n        \"customer_name\": \"\u5f20\u4e09\",\n        \"customer_email\": \"zhangsan@example.com\",\n        \"status\": \"cancelled\",\n        \"total_amount\": 250.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"WEBCAM-1080P\", \"name\": \"1080P\u7f51\u7edc\u6444\u50cf\u5934\", \"qty\": 1, \"price\": 250.00},\n        ],\n        \"shipping_address\": \"\u5317\u4eac\u5e02\u671d\u9633\u533a\u5efa\u56fd\u8def88\u53f7\",\n        \"created_at\": (NOW - timedelta(days=5)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=4)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260606-006\",\n        \"order_number\": \"SO20260606006\",\n        \"customer_name\": \"\u5b59\u4e03\",\n        \"customer_email\": \"sunqi@example.com\",\n        \"status\": \"delivered\",\n        \"total_amount\": 15900.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"MBP-16-M3\", \"name\": \"MacBook Pro 16 M3\", \"qty\": 1, \"price\": 15900.00},\n        ],\n        \"shipping_address\": \"\u676d\u5dde\u5e02\u897f\u6e56\u533a\u6587\u4e09\u8def478\u53f7\",\n        \"created_at\": (NOW - timedelta(days=7)).isoformat(),\n        \"updated_at\": (NOW - timedelta(days=5)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260607-007\",\n        \"order_number\": \"SO20260607007\",\n        \"customer_name\": \"\u5468\u516b\",\n        \"customer_email\": \"zhouba@example.com\",\n        \"status\": \"shipped\",\n        \"total_amount\": 3200.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"CHAIR-ERG\", \"name\": \"\u4eba\u4f53\u5de5\u5b66\u6905\", \"qty\": 1, \"price\": 3200.00},\n        ],\n        \"shipping_address\": \"\u6210\u90fd\u5e02\u6b66\u4faf\u533a\u4eba\u6c11\u5357\u8def\u56db\u6bb5\",\n        \"created_at\": (NOW - timedelta(days=1, hours=3)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=3)).isoformat(),\n    },\n    {\n        \"id\": \"ORD-20260608-008\",\n        \"order_number\": \"SO20260608008\",\n        \"customer_name\": \"\u674e\u56db\",\n        \"customer_email\": \"lisi@example.com\",\n        \"status\": \"pending\",\n        \"total_amount\": 780.00,\n        \"currency\": \"CNY\",\n        \"items\": [\n            {\"sku\": \"SSD-1TB-NVME\", \"name\": \"1TB NVMe\u56fa\u6001\u786c\u76d8\", \"qty\": 1, \"price\": 780.00},\n        ],\n        \"shipping_address\": \"\u4e0a\u6d77\u5e02\u6d66\u4e1c\u65b0\u533a\u4e16\u7eaa\u5927\u9053100\u53f7\",\n        \"created_at\": (NOW - timedelta(hours=2)).isoformat(),\n        \"updated_at\": (NOW - timedelta(hours=2)).isoformat(),\n    },\n]\n\nVALID_STATUSES = {\"pending\", \"shipped\", \"delivered\", \"cancelled\"}\n\n\n# ---------------------------------------------------------------------------\n# Helpers\n# ---------------------------------------------------------------------------\n\ndef _match_order(order: dict, query: str) -> bool:\n    \"\"\"Check if an order matches a search query across all text fields.\"\"\"\n    q = query.lower()\n    return (\n        q in order[\"order_number\"].lower()\n        or q in order[\"customer_name\"].lower()\n        or q in order[\"customer_email\"].lower()\n        or q in str(order[\"total_amount\"])\n        or any(q in item[\"name\"].lower() for item in order[\"items\"])\n        or any(q in item[\"sku\"].lower() for item in order[\"items\"])\n    )\n\n\ndef _filter_by_date(orders: list[dict], start: str, end: str) -> list[dict]:\n    \"\"\"Filter orders by created_at date range (inclusive).\"\"\"\n    try:\n        start_dt = datetime.fromisoformat(start)\n        end_dt = datetime.fromisoformat(end).replace(hour=23, minute=59, second=59)\n    except (ValueError, TypeError):\n        return orders\n    return [\n        o\n        for o in orders\n        if start_dt <= datetime.fromisoformat(o[\"created_at\"]) <= end_dt\n    ]\n\n\n# ---------------------------------------------------------------------------\n# Endpoints\n# ---------------------------------------------------------------------------\n\n\n@app.get(\"/api/orders/search\")\ndef search_orders(\n    q: str = Query(..., description=\"Search keyword\"),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Search orders by keyword across order number, customer, item name, etc.\"\"\"\n    results = [o for o in ORDERS if _match_order(o, q)]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/stats\")\ndef get_order_stats(\n    period: str = Query(\"today\", description=\"today|yesterday|this_week|this_month|all\"),\n):\n    \"\"\"Get aggregate order statistics.\"\"\"\n    now = datetime.now()\n    start = now.replace(hour=0, minute=0, second=0, microsecond=0)\n\n    if period == \"yesterday\":\n        start = start - timedelta(days=1)\n    elif period == \"this_week\":\n        start = start - timedelta(days=start.weekday())\n    elif period == \"this_month\":\n        start = start.replace(day=1)\n    elif period == \"last_month\":\n        first = start.replace(day=1)\n        start = (first - timedelta(days=1)).replace(day=1)\n    elif period == \"all\":\n        start = datetime(2000, 1, 1)\n\n    filtered = [o for o in ORDERS if datetime.fromisoformat(o[\"created_at\"]) >= start]\n\n    by_status: dict[str, int] = {}\n    total_revenue = 0.0\n    for o in filtered:\n        by_status[o[\"status\"]] = by_status.get(o[\"status\"], 0) + 1\n        if o[\"status\"] != \"cancelled\":\n            total_revenue += o[\"total_amount\"]\n\n    return {\n        \"period\": period,\n        \"total_count\": len(filtered),\n        \"total_revenue\": round(total_revenue, 2),\n        \"by_status\": by_status,\n    }\n\n\n@app.get(\"/api/orders/by-customer\")\ndef get_orders_by_customer(\n    customer: str = Query(...),\n    limit: int = Query(20, ge=1, le=100),\n):\n    \"\"\"Get orders by customer name or email (partial match).\"\"\"\n    q = customer.lower()\n    results = [\n        o\n        for o in ORDERS\n        if q in o[\"customer_name\"].lower() or q in o[\"customer_email\"].lower()\n    ]\n    return {\"data\": results[:limit], \"total\": len(results)}\n\n\n@app.get(\"/api/orders/{order_id}\")\ndef get_order(order_id: str):\n    \"\"\"Fetch a single order by ID, including line items and totals.\"\"\"\n    for o in ORDERS:\n        if o[\"id\"] == order_id:\n            return o\n    raise HTTPException(status_code=404, detail=f\"Order '{order_id}' not found\")\n\n\n@app.get(\"/api/orders\")\ndef list_orders(\n    status: str = Query(\"all\", description=\"pending|shipped|delivered|cancelled|all\"),\n    limit: int = Query(20, ge=1, le=100),\n    offset: int = Query(0, ge=0),\n    start_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n    end_date: str | None = Query(None, description=\"YYYY-MM-DD\"),\n):\n    \"\"\"List orders with optional status and date-range filtering.\"\"\"\n    results = ORDERS\n\n    if status != \"all\":\n        results = [o for o in results if o[\"status\"] == status]\n\n    if start_date and end_date:\n        results = _filter_by_date(results, start_date, end_date)\n\n    total = len(results)\n    paged = results[offset : offset + limit]\n\n    return {\"data\": paged, \"total\": total, \"offset\": offset, \"limit\": limit}\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"mcp-order-server\"\nversion = \"0.1.0\"\ndescription = \"MCP server for querying an order REST API\"\nrequires-python = \">=3.10\"\ndependencies = [\n    \"fastmcp>=3.0.0\",\n    \"httpx>=0.27.0\",\n    \"fastapi>=0.100.0\",\n    \"uvicorn[standard]>=0.30.0\",\n]\n\n[project.scripts]\norder-server = \"server:main\"\n"}, {"name": "server.py", "type": "text", "content": "\"\"\"\nMCP server exposing the order REST API as typed tools for AI agents.\n\nRun with: python server.py   (stdio transport, for Claude Code / Claude Desktop)\n\nThe agent sees 6 read-only tools: search_orders, get_order, list_orders,\nget_orders_by_date, get_orders_by_customer, get_order_stats.\n\"\"\"\n\nimport json\n\nfrom fastmcp import FastMCP\n\nimport api_client\n\nmcp = FastMCP(\n    name=\"order-server\",\n    version=\"0.1.0\",\n    instructions=(\n        \"This server queries a local order database. \"\n        \"Use search_orders to find orders by keyword when you don't have an exact ID. \"\n        \"Use get_order to fetch full details once you have an order ID. \"\n        \"Use list_orders to browse with optional status filtering. \"\n        \"Use get_order_stats first for an overview of what's in the system.\"\n    ),\n)\n\n\n# ---------------------------------------------------------------------------\n# Tools - one per API endpoint\n# ---------------------------------------------------------------------------\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Search orders\",\n    },\n)\nasync def search_orders(query: str, limit: int = 20) -> str:\n    \"\"\"Search orders by keyword - matches across order number, customer name,\n    and other text fields.  Returns up to `limit` results.\n\n    Use this as a first step when you don't have an exact order ID.  Once you\n    find the right order, call get_order with its ID for full details.\n    \"\"\"\n    results = await api_client.search_orders(query, limit)\n    if not results:\n        return f\"No orders matching '{query}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order by ID\",\n    },\n)\nasync def get_order(order_id: str) -> str:\n    \"\"\"Fetch a single order by its unique ID.  Returns the full order record\n    including line items, totals, customer info, and status.\n\n    If you don't know the ID, use search_orders or list_orders first.\n    \"\"\"\n    order = await api_client.get_order(order_id)\n    if order is None:\n        return f\"Order '{order_id}' not found. Use search_orders to find valid IDs.\"\n    return json.dumps(order, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"List orders\",\n    },\n)\nasync def list_orders(status: str = \"all\", limit: int = 20, offset: int = 0) -> str:\n    \"\"\"List orders with optional status filtering and pagination.\n\n    `status` accepts values like \"pending\", \"shipped\", \"delivered\", \"cancelled\",\n    or \"all\" (default) to include every status.\n    Use `offset` to page through results (e.g. 0, then 20, then 40).\n    \"\"\"\n    data = await api_client.list_orders(status, limit, offset)\n    orders = data if isinstance(data, list) else data.get(\"data\", [])\n    total = data if isinstance(data, list) else data.get(\"total\", len(orders))\n\n    if not orders:\n        return f\"No orders found (status={status}, offset={offset}).\"\n\n    out = {\n        \"total\": total,\n        \"returned\": len(orders),\n        \"offset\": offset,\n        \"orders\": orders,\n    }\n    return json.dumps(out, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by date range\",\n    },\n)\nasync def get_orders_by_date(\n    start_date: str, end_date: str, limit: int = 50\n) -> str:\n    \"\"\"Get orders created within a date range.  Dates must be ISO format\n    (YYYY-MM-DD, e.g. \"2026-01-01\").  The range is inclusive.\n\n    Use this when you need orders from a specific time window - for example\n    \"all orders from last week\" or \"orders placed in Q1\".\n    \"\"\"\n    results = await api_client.get_orders_by_date(start_date, end_date, limit)\n    if not results:\n        return f\"No orders between {start_date} and {end_date}.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get orders by customer\",\n    },\n)\nasync def get_orders_by_customer(customer: str, limit: int = 20) -> str:\n    \"\"\"Get orders placed by a specific customer.  `customer` can be a name,\n    email, or customer ID - the API matches partial inputs.\n\n    If you only have a partial name, this still works.  Use search_orders\n    as an alternative when you're not sure whether the text is a customer name\n    or an order number.\n    \"\"\"\n    results = await api_client.get_orders_by_customer(customer, limit)\n    if not results:\n        return f\"No orders found for customer '{customer}'.\"\n    return json.dumps(results, ensure_ascii=False, indent=2)\n\n\n@mcp.tool(\n    annotations={\n        \"readOnlyHint\": True,\n        \"openWorldHint\": True,\n        \"title\": \"Get order statistics\",\n    },\n)\nasync def get_order_stats(period: str = \"today\") -> str:\n    \"\"\"Get aggregate order statistics for a time period.\n\n    `period` accepts: \"today\", \"yesterday\", \"this_week\", \"this_month\",\n    \"last_month\", or \"all\".\n    Returns total count, total revenue, and a breakdown by order status.\n    Call this first for a high-level overview before drilling into details.\n    \"\"\"\n    stats = await api_client.get_order_stats(period)\n    return json.dumps(stats, ensure_ascii=False, indent=2)\n\n\n# ---------------------------------------------------------------------------\n# Entry point\n# ---------------------------------------------------------------------------\n\n\ndef main():\n    \"\"\"Run the MCP server over stdio (default for Claude Desktop / Claude Code).\"\"\"\n    mcp.run()\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}]}}, {"id": "eval-3-without_skill", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": ".env", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,QVBJX0hPU1Q9MTI3LjAuMC4xCkFQSV9QT1JUPTgwMDAK"}, {"name": "api_client.py", "type": "text", "content": "\"\"\"\nHTTP client for the Order REST API -- async and sync flavours.\n\nUsage (async):\n    client = OrderApiClient()\n    orders = await client.search_orders(\"Alice\")\n\nUsage (sync):\n    client = OrderApiClient()\n    orders = client.search_orders_sync(\"Alice\")\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\n\nimport httpx\n\n\nclass OrderApiClient:\n    \"\"\"Async HTTP client for the Order Database REST API.\n\n    Reads API_HOST / API_PORT from the environment (defaults to\n    127.0.0.1:8000).  Every method has a ``*_sync`` counterpart that uses\n    ``httpx.Client`` instead of ``httpx.AsyncClient``.\n    \"\"\"\n\n    def __init__(self, base_url: str | None = None) -> None:\n        if base_url is not None:\n            self.base_url = base_url.rstrip(\"/\")\n        else:\n            host = os.getenv(\"API_HOST\", \"127.0.0.1\")\n            port = os.getenv(\"API_PORT\", \"8000\")\n            self.base_url = f\"http://{host}:{port}\"\n\n    # ------------------------------------------------------------------\n    # Async methods\n    # ------------------------------------------------------------------\n\n    async def search_orders(self, query: str, limit: int = 20) -> list[dict]:\n        \"\"\"Full-text search across order fields.\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(\n                f\"{self.base_url}/orders/search\",\n                params={\"query\": query, \"limit\": limit},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    async def get_orders_by_customer(\n        self, customer: str, limit: int = 20\n    ) -> list[dict]:\n        \"\"\"Orders for a customer (partial match on name or email).\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(\n                f\"{self.base_url}/orders/customer/{customer}\",\n                params={\"limit\": limit},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    async def get_orders_by_date(\n        self, start_date: str, end_date: str, limit: int = 50\n    ) -> list[dict]:\n        \"\"\"Orders within [start_date, end_date] (inclusive, ISO format).\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(\n                f\"{self.base_url}/orders/date\",\n                params={\n                    \"start_date\": start_date,\n                    \"end_date\": end_date,\n                    \"limit\": limit,\n                },\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    async def list_orders(\n        self, status: str = \"all\", limit: int = 20, offset: int = 0\n    ) -> list[dict]:\n        \"\"\"List orders with optional status filter and pagination.\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(\n                f\"{self.base_url}/orders\",\n                params={\"status\": status, \"limit\": limit, \"offset\": offset},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    async def get_order(self, order_id: str) -> dict:\n        \"\"\"Fetch a single order by its unique ID.\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(f\"{self.base_url}/orders/{order_id}\")\n            resp.raise_for_status()\n            return resp.json()\n\n    async def get_order_stats(self, period: str = \"all\") -> dict:\n        \"\"\"Aggregate statistics for a time period.\"\"\"\n        async with httpx.AsyncClient() as client:\n            resp = await client.get(\n                f\"{self.base_url}/stats\", params={\"period\": period}\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    # ------------------------------------------------------------------\n    # Sync wrappers\n    # ------------------------------------------------------------------\n\n    def search_orders_sync(self, query: str, limit: int = 20) -> list[dict]:\n        with httpx.Client() as client:\n            resp = client.get(\n                f\"{self.base_url}/orders/search\",\n                params={\"query\": query, \"limit\": limit},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    def get_orders_by_customer_sync(\n        self, customer: str, limit: int = 20\n    ) -> list[dict]:\n        with httpx.Client() as client:\n            resp = client.get(\n                f\"{self.base_url}/orders/customer/{customer}\",\n                params={\"limit\": limit},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    def get_orders_by_date_sync(\n        self, start_date: str, end_date: str, limit: int = 50\n    ) -> list[dict]:\n        with httpx.Client() as client:\n            resp = client.get(\n                f\"{self.base_url}/orders/date\",\n                params={\n                    \"start_date\": start_date,\n                    \"end_date\": end_date,\n                    \"limit\": limit,\n                },\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    def list_orders_sync(\n        self, status: str = \"all\", limit: int = 20, offset: int = 0\n    ) -> list[dict]:\n        with httpx.Client() as client:\n            resp = client.get(\n                f\"{self.base_url}/orders\",\n                params={\"status\": status, \"limit\": limit, \"offset\": offset},\n            )\n            resp.raise_for_status()\n            return resp.json()\n\n    def get_order_sync(self, order_id: str) -> dict:\n        with httpx.Client() as client:\n            resp = client.get(f\"{self.base_url}/orders/{order_id}\")\n            resp.raise_for_status()\n            return resp.json()\n\n    def get_order_stats_sync(self, period: str = \"all\") -> dict:\n        with httpx.Client() as client:\n            resp = client.get(\n                f\"{self.base_url}/stats\", params={\"period\": period}\n            )\n            resp.raise_for_status()\n            return resp.json()\n"}, {"name": "order_api.py", "type": "text", "content": "\"\"\"\nOrder API -- in-memory order database with REST endpoints.\n\nRun with:\n    python order_api.py\nor:\n    uvicorn order_api:app --host 127.0.0.1 --port 8000\n\"\"\"\n\nimport os\nfrom datetime import date, timedelta\n\nfrom fastapi import FastAPI, HTTPException, Query\nfrom fastapi.middleware.cors import CORSMiddleware\n\n# =============================================================================\n# In-memory sample data (7 orders)\n# =============================================================================\n\nSAMPLE_ORDERS: list[dict] = [\n    {\n        \"order_id\": \"ORD-001\",\n        \"customer_name\": \"Alice Johnson\",\n        \"customer_email\": \"alice@example.com\",\n        \"status\": \"delivered\",\n        \"created_at\": \"2026-01-15\",\n        \"total\": 149.97,\n        \"items\": [\n            {\"product\": \"Wireless Mouse\", \"quantity\": 2, \"unit_price\": 29.99},\n            {\"product\": \"USB-C Hub\", \"quantity\": 1, \"unit_price\": 89.99},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-002\",\n        \"customer_name\": \"Bob Smith\",\n        \"customer_email\": \"bob@example.com\",\n        \"status\": \"shipped\",\n        \"created_at\": \"2026-02-20\",\n        \"total\": 1299.00,\n        \"items\": [\n            {\"product\": 'Monitor 27\"', \"quantity\": 1, \"unit_price\": 999.00},\n            {\"product\": \"HDMI Cable\", \"quantity\": 2, \"unit_price\": 150.00},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-003\",\n        \"customer_name\": \"Alice Johnson\",\n        \"customer_email\": \"alice@example.com\",\n        \"status\": \"pending\",\n        \"created_at\": \"2026-03-10\",\n        \"total\": 45.51,\n        \"items\": [\n            {\"product\": \"Notebook\", \"quantity\": 3, \"unit_price\": 15.17},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-004\",\n        \"customer_name\": \"Charlie Brown\",\n        \"customer_email\": \"charlie@example.com\",\n        \"status\": \"cancelled\",\n        \"created_at\": \"2026-04-05\",\n        \"total\": 299.99,\n        \"items\": [\n            {\"product\": \"Mechanical Keyboard\", \"quantity\": 1, \"unit_price\": 299.99},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-005\",\n        \"customer_name\": \"Diana Prince\",\n        \"customer_email\": \"diana@example.com\",\n        \"status\": \"delivered\",\n        \"created_at\": \"2026-05-01\",\n        \"total\": 89.98,\n        \"items\": [\n            {\"product\": \"Webcam HD\", \"quantity\": 1, \"unit_price\": 89.98},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-006\",\n        \"customer_name\": \"Bob Smith\",\n        \"customer_email\": \"bob@example.com\",\n        \"status\": \"pending\",\n        \"created_at\": \"2026-05-15\",\n        \"total\": 549.50,\n        \"items\": [\n            {\"product\": \"Standing Desk\", \"quantity\": 1, \"unit_price\": 450.00},\n            {\"product\": \"Cable Management Tray\", \"quantity\": 1, \"unit_price\": 99.50},\n        ],\n    },\n    {\n        \"order_id\": \"ORD-007\",\n        \"customer_name\": \"Eve Martinez\",\n        \"customer_email\": \"eve@example.com\",\n        \"status\": \"shipped\",\n        \"created_at\": \"2026-06-01\",\n        \"total\": 78.50,\n        \"items\": [\n            {\"product\": \"Laptop Stand\", \"quantity\": 1, \"unit_price\": 49.99},\n            {\"product\": \"Mouse Pad\", \"quantity\": 1, \"unit_price\": 28.51},\n        ],\n    },\n]\n\n\n# =============================================================================\n# Data-access helpers (importable by the MCP server directly)\n# =============================================================================\n\ndef _match_keyword(order: dict, keyword: str) -> bool:\n    \"\"\"Return True if *keyword* appears in any searchable field of *order*.\"\"\"\n    kw = keyword.lower()\n    if kw in order[\"order_id\"].lower():\n        return True\n    if kw in order[\"customer_name\"].lower():\n        return True\n    if kw in order[\"customer_email\"].lower():\n        return True\n    for item in order[\"items\"]:\n        if kw in item[\"product\"].lower():\n            return True\n    return False\n\n\ndef search_orders(query: str, limit: int = 20) -> list[dict]:\n    \"\"\"Return orders whose text fields contain *query*.\"\"\"\n    return [o for o in SAMPLE_ORDERS if _match_keyword(o, query)][:limit]\n\n\ndef get_orders_by_customer(customer: str, limit: int = 20) -> list[dict]:\n    \"\"\"Return orders for a customer (partial match on name or email).\"\"\"\n    c = customer.lower()\n    return [\n        o\n        for o in SAMPLE_ORDERS\n        if c in o[\"customer_name\"].lower() or c in o[\"customer_email\"].lower()\n    ][:limit]\n\n\ndef get_orders_by_date(start_date: str, end_date: str, limit: int = 50) -> list[dict]:\n    \"\"\"Return orders whose `created_at` falls within [start, end] (inclusive).\"\"\"\n    start = date.fromisoformat(start_date)\n    end = date.fromisoformat(end_date)\n    return [\n        o\n        for o in SAMPLE_ORDERS\n        if start <= date.fromisoformat(o[\"created_at\"]) <= end\n    ][:limit]\n\n\ndef get_order(order_id: str) -> dict | None:\n    \"\"\"Return a single order by its unique ID, or None.\"\"\"\n    for o in SAMPLE_ORDERS:\n        if o[\"order_id\"] == order_id:\n            return o\n    return None\n\n\ndef get_order_stats(period: str = \"all\") -> dict:\n    \"\"\"Return aggregate statistics for a time period.\n\n    *period* may be: ``\"today\"``, ``\"yesterday\"``, ``\"this_week\"``,\n    ``\"this_month\"``, ``\"last_month\"``, or ``\"all\"``.\n    \"\"\"\n    today = date.today()\n\n    if period == \"today\":\n        filtered = [\n            o for o in SAMPLE_ORDERS\n            if date.fromisoformat(o[\"created_at\"]) == today\n        ]\n    elif period == \"yesterday\":\n        yesterday = today - timedelta(days=1)\n        filtered = [\n            o for o in SAMPLE_ORDERS\n            if date.fromisoformat(o[\"created_at\"]) == yesterday\n        ]\n    elif period == \"this_week\":\n        monday = today - timedelta(days=today.weekday())\n        filtered = [\n            o for o in SAMPLE_ORDERS\n            if monday <= date.fromisoformat(o[\"created_at\"]) <= today\n        ]\n    elif period == \"this_month\":\n        filtered = [\n            o\n            for o in SAMPLE_ORDERS\n            if date.fromisoformat(o[\"created_at\"]).month == today.month\n            and date.fromisoformat(o[\"created_at\"]).year == today.year\n        ]\n    elif period == \"last_month\":\n        if today.month == 1:\n            last_month = 12\n            last_year = today.year - 1\n        else:\n            last_month = today.month - 1\n            last_year = today.year\n        filtered = [\n            o\n            for o in SAMPLE_ORDERS\n            if date.fromisoformat(o[\"created_at\"]).month == last_month\n            and date.fromisoformat(o[\"created_at\"]).year == last_year\n        ]\n    else:  # \"all\"\n        filtered = list(SAMPLE_ORDERS)\n\n    total_orders = len(filtered)\n    total_revenue = sum(o[\"total\"] for o in filtered)\n    by_status: dict[str, int] = {}\n    for o in filtered:\n        by_status[o[\"status\"]] = by_status.get(o[\"status\"], 0) + 1\n\n    return {\n        \"period\": period,\n        \"total_orders\": total_orders,\n        \"total_revenue\": round(total_revenue, 2),\n        \"by_status\": by_status,\n    }\n\n\ndef list_orders(status: str = \"all\", limit: int = 20, offset: int = 0) -> list[dict]:\n    \"\"\"Return orders, optionally filtered by status, with pagination.\"\"\"\n    if status == \"all\":\n        filtered = list(SAMPLE_ORDERS)\n    else:\n        filtered = [o for o in SAMPLE_ORDERS if o[\"status\"] == status]\n    return filtered[offset : offset + limit]\n\n\n# =============================================================================\n# FastAPI application\n# =============================================================================\n\napp = FastAPI(\n    title=\"Order Database API\",\n    version=\"0.1.0\",\n    description=\"Minimal in-memory order database with search, filtering, and statistics.\",\n)\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"*\"],\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)\n\n\n@app.get(\"/orders/search\")\nasync def api_search_orders(\n    query: str = Query(..., description=\"Search keyword\"),\n    limit: int = Query(20, ge=1, le=100),\n):\n    return search_orders(query, limit)\n\n\n@app.get(\"/orders/customer/{customer}\")\nasync def api_get_orders_by_customer(\n    customer: str,\n    limit: int = Query(20, ge=1, le=100),\n):\n    return get_orders_by_customer(customer, limit)\n\n\n@app.get(\"/orders/date\")\nasync def api_get_orders_by_date(\n    start_date: str = Query(..., description=\"ISO date, e.g. 2026-01-01\"),\n    end_date: str = Query(..., description=\"ISO date, e.g. 2026-12-31\"),\n    limit: int = Query(50, ge=1, le=200),\n):\n    return get_orders_by_date(start_date, end_date, limit)\n\n\n@app.get(\"/orders\")\nasync def api_list_orders(\n    status: str = Query(\n        \"all\", description=\"pending | shipped | delivered | cancelled | all\"\n    ),\n    limit: int = Query(20, ge=1, le=100),\n    offset: int = Query(0, ge=0),\n):\n    return list_orders(status, limit, offset)\n\n\n@app.get(\"/orders/{order_id}\")\nasync def api_get_order(order_id: str):\n    order = get_order(order_id)\n    if order is None:\n        raise HTTPException(\n            status_code=404, detail=f\"Order {order_id!r} not found\"\n        )\n    return order\n\n\n@app.get(\"/stats\")\nasync def api_get_order_stats(\n    period: str = Query(\n        \"all\",\n        description=\"today | yesterday | this_week | this_month | last_month | all\",\n    ),\n):\n    valid = {\"today\", \"yesterday\", \"this_week\", \"this_month\", \"last_month\", \"all\"}\n    if period not in valid:\n        raise HTTPException(\n            status_code=400,\n            detail=f\"Invalid period. Choose from: {', '.join(sorted(valid))}\",\n        )\n    return get_order_stats(period)\n\n\n# =============================================================================\n# Entry point\n# =============================================================================\n\nif __name__ == \"__main__\":\n    import uvicorn\n\n    host = os.getenv(\"API_HOST\", \"127.0.0.1\")\n    port = int(os.getenv(\"API_PORT\", \"8000\"))\n    uvicorn.run(\"order_api:app\", host=host, port=port, reload=True)\n"}, {"name": "pyproject.toml", "type": "text", "content": "[project]\nname = \"order-mcp-stack\"\nversion = \"0.1.0\"\ndescription = \"Minimal order database + REST API + MCP server stack\"\nrequires-python = \">=3.11\"\ndependencies = [\n    \"fastapi>=0.115.0\",\n    \"uvicorn[standard]>=0.30.0\",\n    \"httpx>=0.27.0\",\n    \"mcp>=1.0.0\",\n]\n\n[project.optional-dependencies]\ndev = [\n    \"pytest>=8.0\",\n]\n"}, {"name": "server.py", "type": "text", "content": "\"\"\"\nMCP server -- exposes order-database tools to Claude via stdio.\n\nUses the in-memory data layer from ``order_api`` directly so no separate\nAPI process is required.  The REST API (order_api.py) and HTTP client\n(api_client.py) are available when you need HTTP exposure.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport asyncio\nimport json\n\nfrom mcp.server import Server\nfrom mcp.server.stdio import stdio_server\nfrom mcp.types import TextContent, Tool\n\nfrom order_api import (\n    search_orders as _search_orders,\n    get_orders_by_customer as _get_orders_by_customer,\n    get_orders_by_date as _get_orders_by_date,\n    get_order as _get_order,\n    get_order_stats as _get_order_stats,\n    list_orders as _list_orders,\n)\n\nserver = Server(\"order-server\")\n\n\n# -- list_tools -----------------------------------------------------------\n\n@server.list_tools()\nasync def handle_list_tools() -> list[Tool]:\n    return [\n        Tool(\n            name=\"search_orders\",\n            description=(\n                \"Search orders by keyword -- matches across order number, \"\n                \"customer name, and other text fields.  Returns up to \"\n                \"`limit` results.\\n\\n\"\n                \"Use this as a first step when you don't have an exact \"\n                \"order ID.  Once you find the right order, call get_order \"\n                \"with its ID for full details.\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"query\": {\n                        \"type\": \"string\",\n                        \"description\": \"Search keyword to match against order fields.\",\n                    },\n                    \"limit\": {\n                        \"type\": \"integer\",\n                        \"description\": \"Maximum number of results to return.\",\n                        \"default\": 20,\n                    },\n                },\n                \"required\": [\"query\"],\n            },\n        ),\n        Tool(\n            name=\"get_orders_by_customer\",\n            description=(\n                \"Get orders placed by a specific customer.  `customer` can \"\n                \"be a name, email, or customer ID -- the API matches \"\n                \"partial inputs.\\n\\n\"\n                \"If you only have a partial name, this still works.  Use \"\n                \"search_orders as an alternative when you're not sure \"\n                \"whether the text is a customer name or an order number.\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"customer\": {\n                        \"type\": \"string\",\n                        \"description\": \"Customer name, email, or ID (partial match).\",\n                    },\n                    \"limit\": {\n                        \"type\": \"integer\",\n                        \"description\": \"Maximum results.\",\n                        \"default\": 20,\n                    },\n                },\n                \"required\": [\"customer\"],\n            },\n        ),\n        Tool(\n            name=\"get_orders_by_date\",\n            description=(\n                \"Get orders created within a date range.  Dates must be \"\n                \"ISO format (YYYY-MM-DD, e.g. \\\"2026-01-01\\\").  The range \"\n                \"is inclusive.\\n\\n\"\n                \"Use this when you need orders from a specific time \"\n                \"window -- for example \\\"all orders from last week\\\" or \"\n                \"\\\"orders placed in Q1\\\".\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"start_date\": {\n                        \"type\": \"string\",\n                        \"description\": \"Start date in ISO format (YYYY-MM-DD).\",\n                    },\n                    \"end_date\": {\n                        \"type\": \"string\",\n                        \"description\": \"End date in ISO format (YYYY-MM-DD).\",\n                    },\n                    \"limit\": {\n                        \"type\": \"integer\",\n                        \"description\": \"Maximum results.\",\n                        \"default\": 50,\n                    },\n                },\n                \"required\": [\"start_date\", \"end_date\"],\n            },\n        ),\n        Tool(\n            name=\"get_order\",\n            description=(\n                \"Fetch a single order by its unique ID.  Returns the full \"\n                \"order record including line items, totals, customer info, \"\n                \"and status.\\n\\n\"\n                \"If you don't know the ID, use search_orders or \"\n                \"list_orders first.\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"order_id\": {\n                        \"type\": \"string\",\n                        \"description\": \"The unique order ID (e.g., ORD-001).\",\n                    },\n                },\n                \"required\": [\"order_id\"],\n            },\n        ),\n        Tool(\n            name=\"get_order_stats\",\n            description=(\n                \"Get aggregate order statistics for a time period.\\n\\n\"\n                \"`period` accepts: \\\"today\\\", \\\"yesterday\\\", \\\"this_week\\\", \"\n                \"\\\"this_month\\\", \\\"last_month\\\", or \\\"all\\\".\\n\"\n                \"Returns total count, total revenue, and a breakdown by \"\n                \"order status.\\n\"\n                \"Call this first for a high-level overview before \"\n                \"drilling into details.\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"period\": {\n                        \"type\": \"string\",\n                        \"description\": (\n                            \"Time period: today, yesterday, this_week, \"\n                            \"this_month, last_month, or all.\"\n                        ),\n                        \"default\": \"today\",\n                    },\n                },\n            },\n        ),\n        Tool(\n            name=\"list_orders\",\n            description=(\n                \"List orders with optional status filtering and \"\n                \"pagination.\\n\\n\"\n                \"`status` accepts values like \\\"pending\\\", \\\"shipped\\\", \"\n                \"\\\"delivered\\\", \\\"cancelled\\\", or \\\"all\\\" (default) to \"\n                \"include every status.\\n\"\n                \"Use `offset` to page through results (e.g. 0, then 20, \"\n                \"then 40).\"\n            ),\n            inputSchema={\n                \"type\": \"object\",\n                \"properties\": {\n                    \"status\": {\n                        \"type\": \"string\",\n                        \"description\": (\n                            \"Filter by status: pending, shipped, delivered, \"\n                            \"cancelled, or all.\"\n                        ),\n                        \"default\": \"all\",\n                    },\n                    \"limit\": {\n                        \"type\": \"integer\",\n                        \"description\": \"Page size.\",\n                        \"default\": 20,\n                    },\n                    \"offset\": {\n                        \"type\": \"integer\",\n                        \"description\": \"Number of records to skip.\",\n                        \"default\": 0,\n                    },\n                },\n            },\n        ),\n    ]\n\n\n# -- call_tool ------------------------------------------------------------\n\n@server.call_tool()\nasync def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:\n    try:\n        if name == \"search_orders\":\n            result = _search_orders(\n                arguments[\"query\"], arguments.get(\"limit\", 20)\n            )\n        elif name == \"get_orders_by_customer\":\n            result = _get_orders_by_customer(\n                arguments[\"customer\"], arguments.get(\"limit\", 20)\n            )\n        elif name == \"get_orders_by_date\":\n            result = _get_orders_by_date(\n                arguments[\"start_date\"],\n                arguments[\"end_date\"],\n                arguments.get(\"limit\", 50),\n            )\n        elif name == \"get_order\":\n            result = _get_order(arguments[\"order_id\"])\n            if result is None:\n                return [\n                    TextContent(\n                        type=\"text\",\n                        text=json.dumps(\n                            {\"error\": f\"Order {arguments['order_id']!r} not found\"},\n                            indent=2,\n                        ),\n                    )\n                ]\n        elif name == \"get_order_stats\":\n            result = _get_order_stats(arguments.get(\"period\", \"all\"))\n        elif name == \"list_orders\":\n            result = _list_orders(\n                arguments.get(\"status\", \"all\"),\n                arguments.get(\"limit\", 20),\n                arguments.get(\"offset\", 0),\n            )\n        else:\n            return [\n                TextContent(\n                    type=\"text\",\n                    text=json.dumps(\n                        {\"error\": f\"Unknown tool: {name!r}\"}, indent=2\n                    ),\n                )\n            ]\n\n        return [\n            TextContent(\n                type=\"text\", text=json.dumps(result, indent=2, default=str)\n            )\n        ]\n    except Exception as exc:\n        return [\n            TextContent(\n                type=\"text\",\n                text=json.dumps({\"error\": str(exc)}, indent=2),\n            )\n        ]\n\n\n# -- entry point ----------------------------------------------------------\n\nasync def main() -> None:\n    async with stdio_server() as (read_stream, write_stream):\n        await server.run(\n            read_stream,\n            write_stream,\n            server.create_initialization_options(),\n        )\n\n\nif __name__ == \"__main__\":\n    asyncio.run(main())\n"}], "grading": {"assertions": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 6 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "9 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "minimal-order-mcp", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-06-12T09:26:30Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 11, "failed": 0, "total": 11, "time_seconds": 93.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 11, "failed": 0, "total": 11, "time_seconds": 88.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 11, "failed": 0, "total": 11, "time_seconds": 94.7, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 5 routes"}, {"text": "mcp_min_5_tools", "passed": true, "evidence": "MCP has 6 tools"}, {"text": "tools_have_readonly_hint", "passed": true, "evidence": "6 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": true, "evidence": "has instructions"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.2727, "passed": 3, "failed": 8, "total": 11, "time_seconds": 149.2, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": false, "evidence": "no FastAPI"}, {"text": "has_api_client", "passed": false, "evidence": "no httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": false, "evidence": "no deps"}, {"text": "has_env_file", "passed": false, "evidence": "no API URL"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": false, "evidence": "API has 0 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "11 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6364, "passed": 7, "failed": 4, "total": 11, "time_seconds": 127.5, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": false, "evidence": "API has 3 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "8 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.7273, "passed": 8, "failed": 3, "total": 11, "time_seconds": 278.8, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "has_order_api", "passed": true, "evidence": "order_api.py with FastAPI"}, {"text": "has_api_client", "passed": true, "evidence": "api_client.py with httpx"}, {"text": "has_mcp_server", "passed": true, "evidence": "server.py with MCP"}, {"text": "has_pyproject", "passed": true, "evidence": "pyproject.toml with deps"}, {"text": "has_env_file", "passed": true, "evidence": ".env with config"}, {"text": "has_claude_config", "passed": true, "evidence": "Claude config with MCP"}, {"text": "api_min_5_endpoints", "passed": true, "evidence": "API has 6 routes"}, {"text": "mcp_min_5_tools", "passed": false, "evidence": "MCP has 0 tools"}, {"text": "tools_have_readonly_hint", "passed": false, "evidence": "0 readOnlyHint occurrences"}, {"text": "min_5_sample_orders", "passed": true, "evidence": "9 sample orders"}, {"text": "has_mcp_instructions", "passed": false, "evidence": "no instructions"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 91.9, "stddev": 3.4828, "min": 88.0, "max": 94.7}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "without_skill": {"pass_rate": {"mean": 0.5455, "stddev": 0.2406, "min": 0.2727, "max": 0.7273}, "time_seconds": {"mean": 185.1667, "stddev": 81.8115, "min": 127.5, "max": 278.8}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "delta": {"pass_rate": "+0.45", "time_seconds": "-93.3", "tokens": "+0"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

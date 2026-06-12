@@ -1,0 +1,16 @@
+[project]
+name = "order-mcp-server"
+version = "1.0.0"
+description = "A simple MCP server for querying orders with in-memory storage"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+order-mcp = "server:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

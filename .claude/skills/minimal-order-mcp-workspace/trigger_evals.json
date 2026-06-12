@@ -1,0 +1,22 @@
+[
+  {"query": "帮我搭一个订单查询的 MCP 服务，用 FastAPI 做后端，数据存内存就行，最后能在 Claude Code 里查订单", "should_trigger": true},
+  {"query": "我想把公司的订单数据暴露给 Claude，做成 MCP 工具，能搜索、按状态筛选、看统计", "should_trigger": true},
+  {"query": "I need to build an order management system with MCP tools for Claude - REST API backend with order search, customer filter, and stats", "should_trigger": true},
+  {"query": "做一个三层架构的订单系统：数据库层 → REST API → MCP Server，给 AI Agent 用", "should_trigger": true},
+  {"query": "怎么把已有的订单 API 包装成 MCP server？需要哪些文件和配置？", "should_trigger": true},
+  {"query": "build a minimal order database from scratch + FastAPI + expose as MCP tools for Claude Code", "should_trigger": true},
+  {"query": "我想让 Claude 能直接查我们的订单系统，帮我建个 MCP 中间层", "should_trigger": true},
+  {"query": "create an order REST API with FastAPI and wrap it as an MCP server - need search by keyword, date range, customer filter, and aggregate stats", "should_trigger": true},
+  {"query": "需要一个订单管理后台的 API 接口，然后包装成 Claude 的 MCP 工具，支持搜索、按日期范围查、按客户查", "should_trigger": true},
+  {"query": "搭建最小订单 MCP 项目，要有搜索订单、按客户筛选、按日期查询、统计汇总这些工具", "should_trigger": true},
+  {"query": "帮我写一个 React 订单管理页面，要有表格、搜索框和分页", "should_trigger": false},
+  {"query": "如何用 Prisma ORM 连接 PostgreSQL 数据库并定义 Order model", "should_trigger": false},
+  {"query": "build a user authentication and authorization MCP server with JWT tokens", "should_trigger": false},
+  {"query": "写一个 Python 爬虫抓取京东订单数据，存到 CSV 文件里", "should_trigger": false},
+  {"query": "怎么把 FastAPI 应用部署到阿里云函数计算（类似 AWS Lambda）", "should_trigger": false},
+  {"query": "create a GraphQL API for a product catalog with categories and variants", "should_trigger": false},
+  {"query": "帮我优化这个慢 SQL 查询，SELECT * FROM orders WHERE status = 'pending' ORDER BY created_at", "should_trigger": false},
+  {"query": "I need a real-time WebSocket server that pushes order status updates to connected clients", "should_trigger": false},
+  {"query": "写一个订单数据导出脚本，从数据库读出订单然后生成 Excel 报表", "should_trigger": false},
+  {"query": "how to set up GitHub Actions CI/CD pipeline for a Python FastAPI project with testing and deployment", "should_trigger": false}
+]

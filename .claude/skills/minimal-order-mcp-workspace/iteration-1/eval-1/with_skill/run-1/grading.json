@@ -1,0 +1,70 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 11,
+    "failed": 0,
+    "total": 11
+  },
+  "expectations": [
+    {
+      "text": "has_order_api",
+      "passed": true,
+      "evidence": "order_api.py with FastAPI"
+    },
+    {
+      "text": "has_api_client",
+      "passed": true,
+      "evidence": "api_client.py with httpx"
+    },
+    {
+      "text": "has_mcp_server",
+      "passed": true,
+      "evidence": "server.py with MCP"
+    },
+    {
+      "text": "has_pyproject",
+      "passed": true,
+      "evidence": "pyproject.toml with deps"
+    },
+    {
+      "text": "has_env_file",
+      "passed": true,
+      "evidence": ".env with config"
+    },
+    {
+      "text": "has_claude_config",
+      "passed": true,
+      "evidence": "Claude config with MCP"
+    },
+    {
+      "text": "api_min_5_endpoints",
+      "passed": true,
+      "evidence": "API has 5 routes"
+    },
+    {
+      "text": "mcp_min_5_tools",
+      "passed": true,
+      "evidence": "MCP has 6 tools"
+    },
+    {
+      "text": "tools_have_readonly_hint",
+      "passed": true,
+      "evidence": "6 readOnlyHint occurrences"
+    },
+    {
+      "text": "min_5_sample_orders",
+      "passed": true,
+      "evidence": "8 sample orders"
+    },
+    {
+      "text": "has_mcp_instructions",
+      "passed": true,
+      "evidence": "has instructions"
+    }
+  ],
+  "timing": {
+    "total_tokens": 33775,
+    "duration_ms": 92982,
+    "total_duration_seconds": 93.0
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "minimal-order-mcp",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我想搭建一个简单的订单查询系统，可以给 AI Agent 用 MCP 工具来查询订单。数据库不需要太复杂，用内存数据就行，有订单号、客户名、状态、金额字段。最后能在 Claude Code 里通过 MCP 工具查订单。帮我从头搭建整个项目。",
+      "expected_output": "Create a complete three-tier project with: 1) FastAPI order API with in-memory data, 2) MCP server using FastMCP with 6 tools, 3) Claude Code settings.json configuration, 4) startup instructions",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "帮我做一个订单管理后台的 API，要有搜索、按客户筛选、按日期范围查询订单的功能，然后再把这个 API 包装成 MCP Server 给 Claude 用。数据用几个示例订单就行。",
+      "expected_output": "Build order REST API with search/customer/date endpoints, then wrap in MCP server with corresponding tools, include settings.json for Claude Code",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I need a minimal order database + REST API + MCP server stack. The API should support searching orders by keyword, filtering by customer, date range queries, and aggregate statistics. The MCP server should expose these as tools for Claude. Use in-memory sample data with at least 5 orders.",
+      "expected_output": "Three-tier architecture: data layer with sample orders, FastAPI REST API with 5+ endpoints, FastMCP server with matching tools, Claude Code configuration",
+      "files": []
+    }
+  ]
+}

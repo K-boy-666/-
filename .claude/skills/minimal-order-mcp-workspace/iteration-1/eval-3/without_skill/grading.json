@@ -1,0 +1,59 @@
+{
+  "assertions": [
+    {
+      "text": "has_order_api",
+      "passed": true,
+      "evidence": "order_api.py with FastAPI"
+    },
+    {
+      "text": "has_api_client",
+      "passed": true,
+      "evidence": "api_client.py with httpx"
+    },
+    {
+      "text": "has_mcp_server",
+      "passed": true,
+      "evidence": "server.py with MCP"
+    },
+    {
+      "text": "has_pyproject",
+      "passed": true,
+      "evidence": "pyproject.toml with deps"
+    },
+    {
+      "text": "has_env_file",
+      "passed": true,
+      "evidence": ".env with config"
+    },
+    {
+      "text": "has_claude_config",
+      "passed": true,
+      "evidence": "Claude config with MCP"
+    },
+    {
+      "text": "api_min_5_endpoints",
+      "passed": true,
+      "evidence": "API has 6 routes"
+    },
+    {
+      "text": "mcp_min_5_tools",
+      "passed": false,
+      "evidence": "MCP has 0 tools"
+    },
+    {
+      "text": "tools_have_readonly_hint",
+      "passed": false,
+      "evidence": "0 readOnlyHint occurrences"
+    },
+    {
+      "text": "min_5_sample_orders",
+      "passed": true,
+      "evidence": "9 sample orders"
+    },
+    {
+      "text": "has_mcp_instructions",
+      "passed": false,
+      "evidence": "no instructions"
+    }
+  ]
+}

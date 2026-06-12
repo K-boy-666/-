@@ -1,0 +1,140 @@
+Split: 12 train, 8 test (holdout=0.4)
+
+============================================================
+Iteration 1/5
+Description: Build a minimal order database + REST API + MCP Server that exposes the API to Claude. Use this skill whenever the user wants to create an MCP server for order data, build a FastAPI + MCP integration, wrap a database behind an MCP tool layer, scaffold an order management backend, or asks about "MCP order server", "order API for agent", "expose database to Claude via MCP", or any similar three-tier data→API→MCP architecture.
+============================================================
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Warning: query failed: [WinError 2] 系统找不到指定的文件。
+Train: 18/36 correct, precision=100% recall=0% accuracy=50% (0.3s)
+  [FAIL] rate=0/3 expected=True: build a minimal order database from scratch + FastAPI + expo
+  [FAIL] rate=0/3 expected=True: 我想让 Claude 能直接查我们的订单系统，帮我建个 MCP 中间层
+  [FAIL] rate=0/3 expected=True: 怎么把已有的订单 API 包装成 MCP server？需要哪些文件和配置？
+  [FAIL] rate=0/3 expected=True: 搭建最小订单 MCP 项目，要有搜索订单、按客户筛选、按日期查询、统计汇总这些工具
+  [FAIL] rate=0/3 expected=True: 帮我搭一个订单查询的 MCP 服务，用 FastAPI 做后端，数据存内存就行，最后能在 Claude Code 里查订
+  [FAIL] rate=0/3 expected=True: 我想把公司的订单数据暴露给 Claude，做成 MCP 工具，能搜索、按状态筛选、看统计
+  [PASS] rate=0/3 expected=False: 写一个订单数据导出脚本，从数据库读出订单然后生成 Excel 报表
+  [PASS] rate=0/3 expected=False: 如何用 Prisma ORM 连接 PostgreSQL 数据库并定义 Order model
+  [PASS] rate=0/3 expected=False: 帮我写一个 React 订单管理页面，要有表格、搜索框和分页
+  [PASS] rate=0/3 expected=False: I need a real-time WebSocket server that pushes order status
+  [PASS] rate=0/3 expected=False: 帮我优化这个慢 SQL 查询，SELECT * FROM orders WHERE status = 'pending'
+  [PASS] rate=0/3 expected=False: how to set up GitHub Actions CI/CD pipeline for a Python Fas
+Test : 12/24 correct, precision=100% recall=0% accuracy=50% (0.0s)
+  [FAIL] rate=0/3 expected=True: 做一个三层架构的订单系统：数据库层 → REST API → MCP Server，给 AI Agent 用
+  [FAIL] rate=0/3 expected=True: create an order REST API with FastAPI and wrap it as an MCP 
+  [FAIL] rate=0/3 expected=True: 需要一个订单管理后台的 API 接口，然后包装成 Claude 的 MCP 工具，支持搜索、按日期范围查、按客户查
+  [FAIL] rate=0/3 expected=True: I need to build an order management system with MCP tools fo
+  [PASS] rate=0/3 expected=False: 写一个 Python 爬虫抓取京东订单数据，存到 CSV 文件里
+  [PASS] rate=0/3 expected=False: create a GraphQL API for a product catalog with categories a
+  [PASS] rate=0/3 expected=False: 怎么把 FastAPI 应用部署到阿里云函数计算（类似 AWS Lambda）
+  [PASS] rate=0/3 expected=False: build a user authentication and authorization MCP server wit
+
+Improving description...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\39357\.claude\plugins\cache\claude-plugins-official\skill-creator\746c982737e3\skills\skill-creator\scripts\run_loop.py", line 328, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\39357\.claude\plugins\cache\claude-plugins-official\skill-creator\746c982737e3\skills\skill-creator\scripts\run_loop.py", line 293, in main
+    output = run_loop(
+        eval_set=eval_set,
+    ...<11 lines>...
+        log_dir=log_dir,
+    )
+  File "C:\Users\39357\.claude\plugins\cache\claude-plugins-official\skill-creator\746c982737e3\skills\skill-creator\scripts\run_loop.py", line 199, in run_loop
+    new_description = improve_description(
+        skill_name=name,
+    ...<6 lines>...
+        iteration=iteration,
+    )
+  File "C:\Users\39357\.claude\plugins\cache\claude-plugins-official\skill-creator\746c982737e3\skills\skill-creator\scripts\improve_description.py", line 144, in improve_description
+    text = _call_claude(prompt, model)
+  File "C:\Users\39357\.claude\plugins\cache\claude-plugins-official\skill-creator\746c982737e3\skills\skill-creator\scripts\improve_description.py", line 35, in _call_claude
+    result = subprocess.run(
+        cmd,
+    ...<4 lines>...
+        timeout=timeout,
+    )
+  File "E:\python\Lib\subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\python\Lib\subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\python\Lib\subprocess.py", line 1554, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] 系统找不到指定的文件。

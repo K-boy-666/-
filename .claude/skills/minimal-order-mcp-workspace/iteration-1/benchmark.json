@@ -1,0 +1,503 @@
+{
+  "metadata": {
+    "skill_name": "minimal-order-mcp",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-12T09:26:30Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 93.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": true,
+          "evidence": "order_api.py with FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": true,
+          "evidence": "api_client.py with httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": true,
+          "evidence": "pyproject.toml with deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": true,
+          "evidence": ".env with config"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": true,
+          "evidence": "API has 5 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": true,
+          "evidence": "MCP has 6 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": true,
+          "evidence": "6 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "8 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": true,
+          "evidence": "has instructions"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 88.0,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": true,
+          "evidence": "order_api.py with FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": true,
+          "evidence": "api_client.py with httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": true,
+          "evidence": "pyproject.toml with deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": true,
+          "evidence": ".env with config"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": true,
+          "evidence": "API has 5 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": true,
+          "evidence": "MCP has 6 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": true,
+          "evidence": "6 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "8 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": true,
+          "evidence": "has instructions"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 94.7,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": true,
+          "evidence": "order_api.py with FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": true,
+          "evidence": "api_client.py with httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": true,
+          "evidence": "pyproject.toml with deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": true,
+          "evidence": ".env with config"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": true,
+          "evidence": "API has 5 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": true,
+          "evidence": "MCP has 6 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": true,
+          "evidence": "6 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "8 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": true,
+          "evidence": "has instructions"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2727,
+        "passed": 3,
+        "failed": 8,
+        "total": 11,
+        "time_seconds": 149.2,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": false,
+          "evidence": "no FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": false,
+          "evidence": "no httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": false,
+          "evidence": "no deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": false,
+          "evidence": "no API URL"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": false,
+          "evidence": "API has 0 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": false,
+          "evidence": "MCP has 0 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": false,
+          "evidence": "0 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "11 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": false,
+          "evidence": "no instructions"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6364,
+        "passed": 7,
+        "failed": 4,
+        "total": 11,
+        "time_seconds": 127.5,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": true,
+          "evidence": "order_api.py with FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": true,
+          "evidence": "api_client.py with httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": true,
+          "evidence": "pyproject.toml with deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": true,
+          "evidence": ".env with config"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": false,
+          "evidence": "API has 3 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": false,
+          "evidence": "MCP has 0 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": false,
+          "evidence": "0 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "8 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": false,
+          "evidence": "no instructions"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.7273,
+        "passed": 8,
+        "failed": 3,
+        "total": 11,
+        "time_seconds": 278.8,
+        "tokens": 0,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "has_order_api",
+          "passed": true,
+          "evidence": "order_api.py with FastAPI"
+        },
+        {
+          "text": "has_api_client",
+          "passed": true,
+          "evidence": "api_client.py with httpx"
+        },
+        {
+          "text": "has_mcp_server",
+          "passed": true,
+          "evidence": "server.py with MCP"
+        },
+        {
+          "text": "has_pyproject",
+          "passed": true,
+          "evidence": "pyproject.toml with deps"
+        },
+        {
+          "text": "has_env_file",
+          "passed": true,
+          "evidence": ".env with config"
+        },
+        {
+          "text": "has_claude_config",
+          "passed": true,
+          "evidence": "Claude config with MCP"
+        },
+        {
+          "text": "api_min_5_endpoints",
+          "passed": true,
+          "evidence": "API has 6 routes"
+        },
+        {
+          "text": "mcp_min_5_tools",
+          "passed": false,
+          "evidence": "MCP has 0 tools"
+        },
+        {
+          "text": "tools_have_readonly_hint",
+          "passed": false,
+          "evidence": "0 readOnlyHint occurrences"
+        },
+        {
+          "text": "min_5_sample_orders",
+          "passed": true,
+          "evidence": "9 sample orders"
+        },
+        {
+          "text": "has_mcp_instructions",
+          "passed": false,
+          "evidence": "no instructions"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 91.9,
+        "stddev": 3.4828,
+        "min": 88.0,
+        "max": 94.7
+      },
+      "tokens": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.5455,
+        "stddev": 0.2406,
+        "min": 0.2727,
+        "max": 0.7273
+      },
+      "time_seconds": {
+        "mean": 185.1667,
+        "stddev": 81.8115,
+        "min": 127.5,
+        "max": 278.8
+      },
+      "tokens": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0,
+        "max": 0
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.45",
+      "time_seconds": "-93.3",
+      "tokens": "+0"
+    }
+  },
+  "notes": []
+}
