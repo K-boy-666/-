@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>暗黑骑士：深渊重临 - 1.9 巅峰架构版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap');
+        
+        :root { --bg-dark: #0a0a0c; --soul-color: #a78bfa; --hp-color: #ef4444; --block-color: #3b82f6; }
+        body { background-color: var(--bg-dark); color: #e2e8f0; font-family: 'Noto Serif SC', serif; overflow: hidden; user-select: none; }
+
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-60px) scale(1.3); opacity: 0; } }
+        .floating-text { animation: floatUp 0.8s ease-out forwards; position: absolute; z-index: 9999; font-weight: 900; text-shadow: 0px 2px 4px rgba(0,0,0,0.8); pointer-events: none; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+        .shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        .enemy-shake { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes damageFlash { 0% { filter: brightness(1) sepia(0) hue-rotate(0) saturate(1); } 50% { filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5); } 100% { filter: brightness(1) sepia(0) hue-rotate(0) saturate(1); } }
+        .damage-flash { animation: damageFlash 0.2s; }
+
+        /* 攻击斩击动画 */
+        .slash-fx { position: absolute; width: 150px; height: 4px; background: linear-gradient(90deg, transparent, #fff, #ef4444, #7f1d1d, transparent); border-radius: 50%; filter: drop-shadow(0 0 5px #ef4444); transform-origin: center; animation: slashAnim 0.25s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; pointer-events: none; z-index: 1000; }
+        @keyframes slashAnim { 0% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(0); opacity: 1; } 50% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(1.5); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(-45deg) scaleX(0.5); opacity: 0; } }
+
+        .hand-wrapper { display: flex; justify-content: center; align-items: flex-end; position: relative; width: 100%; height: 220px; }
+        .card { transition: all 0.2s ease-out; cursor: pointer; width: 130px; height: 180px; border: 2px solid #334155; background: linear-gradient(135deg, #1e293b, #0f172a); position: relative; margin-left: -40px; flex-shrink: 0; border-radius: 8px; }
+        .card.card-grid-item { margin-left: 0; transform: none !important; }
+        .card.card-grid-item:hover { transform: translateY(-10px) !important; border-color: #fbbf24; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); }
+        .card:first-child { margin-left: 0; }
+        .card:hover { transform: translateY(-40px) scale(1.15) rotate(0deg) !important; z-index: 100 !important; border-color: #fbbf24; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.8); }
+        .card.affordable { border-color: #6366f1; }
+        .card.unaffordable { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.8); }
+        .card.preview-card { margin-left: 0; transform: scale(1.2) !important; cursor: default; }
+
+        /* Slay the Spire Map Styles */
+        .map-grid { display: flex; flex-direction: column-reverse; gap: 30px; padding: 60px 20px; position: relative; max-width: 500px; margin: 0 auto; }
+        .map-row { display: grid; grid-template-columns: repeat(5, 1fr); justify-items: center; align-items: center; width: 100%; z-index: 10; position: relative; height: 50px; }
+        .map-node-wrapper { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; }
+        .node { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: not-allowed; opacity: 0.4; border: 2px solid #444; transition: all 0.3s; background: #18181b; }
+        .node.reachable { cursor: pointer; opacity: 1; border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); background: #27272a; }
+        .node.reachable:hover { background: #3f3f46; transform: scale(1.2); }
+        .node.visited { opacity: 0.3; background: #000; border-color: #555; }
+        .node.current { border-color: #fff; box-shadow: 0 0 20px #fff; opacity: 1; transform: scale(1.2); z-index: 10; background: #3f3f46; }
+
+        .vignette { pointer-events: none; position: fixed; inset: 0; background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%); z-index: 90; }
+        @keyframes soul-glow { 0% { box-shadow: 0 0 5px var(--soul-color); } 50% { box-shadow: 0 0 15px var(--soul-color); } 100% { box-shadow: 0 0 5px var(--soul-color); } }
+        .soul-badge { animation: soul-glow 2s infinite; }
+
+        /* 遗物悬停样式修复 */
+        .relic-container { position: relative; z-index: 10; }
+        .relic-container:hover { z-index: 50; }
+        .relic-tooltip { 
+            visibility: hidden; opacity: 0; transition: opacity 0.2s; 
+            position: absolute; top: 130%; left: 50%; transform: translateX(-50%); 
+            width: max-content; max-width: 240px; background: #18181b; border: 1px solid #52525b; 
+            padding: 10px; border-radius: 6px; z-index: 9999; text-align: left; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9); pointer-events: none;
+        }
+        .relic-container:hover .relic-tooltip { visibility: visible; opacity: 1; }
+        .intent-tooltip { bottom: auto; top: 120%; }
+        
+        .event-btn { background: #18181b; border: 1px solid #3f3f46; padding: 16px; border-radius: 8px; text-align: left; font-weight: bold; color: #d4d4d8; transition: all 0.2s; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .event-btn:hover { background: #27272a; border-color: #a78bfa; transform: translateX(5px); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+        /* 发光边框特效 */
+        .glow-border { animation: borderGlow 2s infinite; }
+        @keyframes borderGlow {
+            0% { box-shadow: 0 0 5px #8b5cf6, inset 0 0 5px #8b5cf6; border-color: #8b5cf6; }
+            50% { box-shadow: 0 0 20px #8b5cf6, inset 0 0 10px #8b5cf6; border-color: #a78bfa; }
+            100% { box-shadow: 0 0 5px #8b5cf6, inset 0 0 5px #8b5cf6; border-color: #8b5cf6; }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2">
+
+    <!-- 隐藏的本地音频播放器 -->
+    <audio id="custom-bgm" loop></audio>
+
+    <div id="game-app" class="relative w-full h-full max-w-6xl bg-zinc-900 rounded-xl border border-zinc-800 shadow-2xl overflow-hidden flex flex-col z-0">
+        
+        <!-- 顶栏重构版 -->
+        <div class="flex justify-between items-start p-3 bg-zinc-950 border-b border-zinc-800 z-[60] hidden w-full" id="top-bar">
+            <!-- 左侧状态 -->
+            <div class="flex flex-col gap-2 shrink-0 w-48">
+                <div class="flex items-center gap-2" id="player-hp-ui">
+                    <span class="text-red-500 font-bold text-sm">HP</span>
+                    <div class="w-full h-4 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700 relative">
+                        <div id="hp-bar" class="h-full bg-red-600 transition-all duration-300" style="width: 100%;"></div>
+                        <span id="hp-text" class="absolute inset-0 flex justify-center items-center text-[10px] font-bold drop-shadow-md">80/80</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-yellow-500 font-bold text-sm">GOLD</span>
+                    <span id="gold-text" class="text-yellow-200 font-bold">99</span>
+                </div>
+            </div>
+            
+            <!-- 中间遗物展示区 -->
+            <div class="flex gap-2 flex-wrap flex-1 px-8 justify-center items-start content-start" id="relics">
+                <!-- 动态生成 -->
+            </div>
+
+            <!-- 右侧楼层 -->
+            <div class="flex flex-col items-end gap-2 shrink-0 w-32">
+                <span id="floor-display" class="text-zinc-500 text-sm italic font-bold">第 1 层</span>
+                <button onclick="viewMap()" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-3 py-1 rounded text-xs transition-colors text-white font-bold shadow-lg">查看地图</button>
+            </div>
+        </div>
+
+        <!-- 主屏幕内容 -->
+        <div class="flex-grow relative overflow-hidden flex flex-col z-10">
+            
+            <!-- 场景0: 开局遗物选择与BGM设置 -->
+            <div id="start-view" class="hidden flex-grow flex flex-col items-center justify-center bg-zinc-950 p-12 z-50">
+                <h1 class="text-5xl font-black text-violet-500 mb-2 tracking-widest drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]">暗黑骑士：深渊重临</h1>
+                <p class="text-zinc-500 mb-8 italic">The Dark Knight: Abyss Returns</p>
+                
+                <!-- BGM 上传区 -->
+                <div class="mb-12 flex flex-col items-center">
+                    <label for="bgm-upload" id="bgm-label" class="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-6 py-3 rounded-lg border border-zinc-600 font-bold transition-all hover:scale-105 shadow-lg">
+                        🎵 载入本地背景音乐 (可选)
+                    </label>
+                    <input type="file" id="bgm-upload" accept="audio/*" class="hidden" onchange="loadCustomBGM(event)">
+                </div>
+
+                <h2 class="text-2xl font-bold text-zinc-300 mb-6">神祇赐予了你一个额外的恩赐...</h2>
+                <div id="start-relics" class="flex gap-8 flex-wrap justify-center"></div>
+            </div>
+
+            <!-- 场景1: 战斗 -->
+            <div id="combat-view" class="hidden flex-grow flex flex-col p-6 items-center justify-between">
+                <div class="w-full flex justify-around items-end pt-12">
+                    <div class="flex flex-col items-center gap-4 relative" id="player-avatar-container">
+                        <div class="absolute -top-12 soul-badge bg-violet-600 text-white px-4 py-1 rounded-full text-xs font-bold z-20">
+                            ✨ <span id="soul-val">0</span> 灵魂
+                        </div>
+                        <div id="player-block" class="absolute -right-2 top-0 bg-blue-600 text-white w-8 h-8 rounded flex items-center justify-center font-bold border border-white hidden z-10">0</div>
+                        <div class="w-20 h-28 bg-zinc-700 rounded-lg border-2 border-zinc-500 flex items-center justify-center text-4xl shadow-xl relative z-0">👤</div>
+                        <!-- Player Buffs -->
+                        <div id="player-buffs-ui" class="absolute -bottom-6 flex gap-1 w-full justify-center"></div>
+                    </div>
+                    <div id="enemies" class="flex gap-12"></div>
+                </div>
+                <div id="battle-log" class="absolute left-6 top-6 w-56 text-[11px] text-zinc-500 pointer-events-none flex flex-col-reverse gap-1 opacity-60"></div>
+            </div>
+
+            <!-- 场景2: 事件 -->
+            <div id="event-view" class="hidden flex-grow flex items-center justify-center bg-zinc-950/40 p-12">
+                <div class="max-w-2xl w-full bg-zinc-900 border border-zinc-800 p-8 rounded-lg shadow-2xl text-center">
+                    <h2 id="event-title" class="text-3xl font-bold text-violet-400 mb-4 border-b border-zinc-800 pb-4">发生事件</h2>
+                    <p id="event-desc" class="text-zinc-300 italic mb-8 text-lg leading-relaxed text-left"></p>
+                    <div id="event-options" class="flex flex-col gap-3"></div>
+                </div>
+            </div>
+
+            <!-- 场景3: 休息处 -->
+            <div id="rest-view" class="hidden flex-grow flex flex-col items-center justify-center p-12">
+                <div id="rest-menu" class="text-center w-full max-w-4xl">
+                    <h2 class="text-3xl font-bold text-orange-400 mb-8">休息处 - 篝火</h2>
+                    <div class="flex justify-center gap-6">
+                        <button onclick="handleRest('heal')" class="w-48 h-64 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-4 transition-all hover:-translate-y-2 shadow-xl">
+                            <span class="text-6xl">💤</span><span class="font-bold text-xl text-white">休息</span><span class="text-sm text-green-500 px-4">回复 30% 生命值</span>
+                        </button>
+                        <button onclick="handleRest('smith')" class="w-48 h-64 bg-zinc-800 hover:bg-zinc-700 border-2 border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-4 transition-all hover:-translate-y-2 shadow-xl">
+                            <span class="text-6xl">🔨</span><span class="font-bold text-xl text-white">锻造</span><span class="text-sm text-blue-400 px-4">升级一张卡牌</span>
+                        </button>
+                        <!-- ✨ 深渊铸卡 ✨ -->
+                        <button onclick="handleRest('forge')" class="w-48 h-64 bg-zinc-900 hover:bg-zinc-800 border-2 border-violet-700 rounded-xl flex flex-col items-center justify-center gap-4 transition-all hover:-translate-y-2 shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:shadow-[0_0_20px_rgba(139,92,246,0.6)] glow-border relative overflow-hidden group">
+                            <div class="absolute inset-0 bg-violet-600/10 group-hover:bg-violet-600/20 transition-colors"></div>
+                            <span class="text-6xl relative z-10">✨</span>
+                            <span class="font-bold text-xl text-violet-300 relative z-10">深渊铸造</span>
+                            <span class="text-xs text-violet-400 px-4 relative z-10">利用大语言模型创造新卡</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="smith-menu" class="hidden flex flex-col w-full h-full">
+                    <h2 class="text-2xl font-bold text-blue-400 mb-4 text-center">选择一张卡牌进行升级</h2>
+                    <div id="smith-cards" class="flex-grow overflow-y-auto flex flex-wrap justify-center gap-4 p-4 border border-zinc-800 rounded bg-zinc-950"></div>
+                    <button onclick="cancelRestSubmenu()" class="mt-4 mx-auto bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded text-zinc-300">取消</button>
+                </div>
+
+                <div id="forge-menu" class="hidden flex flex-col items-center justify-center w-full h-full max-w-2xl mx-auto">
+                    <div class="bg-zinc-900 p-8 rounded-xl border border-violet-800/50 shadow-[0_0_30px_rgba(139,92,246,0.15)] w-full text-center">
+                        <h2 class="text-3xl font-black text-violet-400 mb-4 tracking-wider">✨ 深渊铸卡</h2>
+                        <p class="text-zinc-400 mb-8">向深渊诉说你的渴望，利用源初的混沌为你具象化一张独属卡牌。</p>
+                        
+                        <input type="text" id="forge-input" placeholder="例如：牺牲血量对全体造成爆炸伤害..." 
+                               class="w-full bg-zinc-950 border-2 border-zinc-700 rounded-lg p-4 text-white text-lg mb-8 focus:border-violet-500 focus:ring focus:ring-violet-500/20 focus:outline-none transition-all placeholder:text-zinc-600">
+                        
+                        <div class="flex justify-center gap-6">
+                            <button onclick="cancelRestSubmenu()" class="bg-zinc-800 hover:bg-zinc-700 px-8 py-3 rounded-lg text-white font-bold transition-colors">取消</button>
+                            <button id="forge-btn" onclick="executeForge()" class="bg-violet-700 hover:bg-violet-600 px-8 py-3 rounded-lg text-white font-bold transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] flex items-center gap-2">
+                                <span>✨</span> 开始铸造
+                            </button>
+                        </div>
+                        
+                        <div id="forge-status" class="mt-8 text-violet-400 font-bold animate-pulse hidden">
+                            ✨ 深渊正在聆听你的渴望，编织命运的丝线...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 场景4: 商店 -->
+            <div id="shop-view" class="hidden flex-grow flex flex-col items-center p-8 bg-zinc-950 overflow-y-auto">
+                <h2 class="text-3xl font-bold text-yellow-500 mb-6 flex items-center gap-2">💰 诡秘商人 <span class="text-sm text-zinc-400 font-normal">"有钱能使鬼推磨..."</span></h2>
+                <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                        <h3 class="text-zinc-400 mb-4 text-center font-bold">卡牌出售</h3>
+                        <div id="shop-cards" class="flex justify-center gap-4 flex-wrap"></div>
+                    </div>
+                    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex flex-col items-center">
+                        <h3 class="text-zinc-400 mb-4 text-center font-bold">遗物与服务</h3>
+                        <div id="shop-relics" class="flex justify-center gap-4 mb-6"></div>
+                        <button onclick="buyRemoval()" class="bg-red-900/50 hover:bg-red-800/80 border border-red-700 p-3 rounded-lg flex flex-col items-center gap-1 w-48 transition-colors">
+                            <span class="text-2xl">🔥</span><span class="font-bold text-white">移除卡牌服务</span><span id="remove-price" class="text-yellow-400 text-sm">75 金币</span>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="endRoom()" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-10 py-3 rounded-lg font-bold text-lg text-white">离开商店</button>
+            </div>
+
+            <!-- 场景5: 战斗奖励结算 -->
+            <div id="reward-view" class="hidden flex-grow flex flex-col items-center justify-center p-12 bg-black/80">
+                <div class="bg-zinc-900 border border-zinc-700 p-8 rounded-xl max-w-md w-full text-center shadow-2xl">
+                    <h2 class="text-3xl font-bold text-yellow-500 mb-6 border-b border-zinc-700 pb-2">战斗胜利</h2>
+                    <div id="reward-list" class="flex flex-col gap-3 mb-6"></div>
+                    <button onclick="endRoom()" class="bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded text-zinc-300 w-full font-bold transition-colors">继续前进</button>
+                </div>
+            </div>
+
+            <!-- 场景6: 地图选择 -->
+            <div id="map-view" class="hidden flex-grow overflow-y-auto bg-zinc-950 p-4 flex flex-col items-center relative">
+                <div class="text-center mb-4 z-20 flex flex-col items-center">
+                    <h1 class="text-2xl font-bold text-zinc-400 tracking-widest uppercase mb-2">幽暗森林</h1>
+                    <span class="text-xs text-zinc-500 bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shadow-md">在纠结的网状小径中规划你的路线</span>
+                </div>
+                <button id="return-room-btn" onclick="returnToActiveRoom()" class="hidden sticky top-4 z-50 bg-blue-900 hover:bg-blue-800 text-white border border-blue-500 px-6 py-2 rounded-full font-bold shadow-lg mb-4">返回当前房间</button>
+                <div id="map-container" class="map-grid w-full max-w-3xl flex-grow mx-auto relative">
+                    <svg id="map-lines" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部交互 (手牌) -->
+        <div id="player-controls" class="hidden h-60 bg-zinc-950/90 border-t border-zinc-800 relative z-20">
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-900 border-2 border-zinc-600 w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-indigo-400 z-50 shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+                <span id="energy-now">3</span>/<span id="energy-max">3</span>
+            </div>
+            <div class="absolute left-8 bottom-8 text-[10px] text-zinc-500">
+                <div>抽牌堆: <span id="draw-count">0</span></div>
+                <div>弃牌堆: <span id="discard-count">0</span></div>
+            </div>
+            <div id="hand-display" class="hand-wrapper"></div>
+            <button onclick="executeEndTurn()" class="absolute right-8 top-1/2 -translate-y-1/2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-8 py-4 rounded font-bold text-sm text-white transition-colors">结束回合</button>
+        </div>
+
+        <div class="vignette"></div>
+    </div>
+
+    <!-- 弹窗/遮罩 -->
+    <div id="modal" class="fixed inset-0 bg-black/90 z-[100] hidden flex flex-col items-center justify-center p-8">
+        <div id="modal-content" class="bg-zinc-900 border border-zinc-700 p-8 rounded-xl max-w-4xl w-full text-center shadow-2xl relative"></div>
+        <button id="modal-close-btn" onclick="closeModal()" class="hidden mt-6 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-6 py-2 rounded text-white font-bold">取消 / 关闭</button>
+    </div>
+
+    <script>
+        // --- 核心配置 ---
+        const apiKey = ""; // Gemini API Key 注入
+        const PLAYER_INITIAL_HP = 80;
+        const INITIAL_DECK = ['strike', 'strike', 'strike', 'defend', 'defend', 'defend', 'defend', 'weeping_slash', 'soul_bite', 'soul_rend'];
+
+        // --- 本地背景音乐加载器 (修复自动播放问题) ---
+        function loadCustomBGM(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                const audio = document.getElementById('custom-bgm');
+                audio.src = url;
+                audio.volume = 0.3;
+                
+                const label = document.getElementById('bgm-label');
+                label.innerText = '⏳ 正在加载音频...';
+                
+                // 监听 canplay 事件，确保流加载完成后再播放，防止被浏览器策略阻断
+                audio.oncanplay = () => {
+                    audio.play().then(() => {
+                        label.innerText = '🎵 播放中: ' + file.name.substring(0, 20) + '...';
+                        label.classList.replace('text-zinc-300', 'text-green-400');
+                        label.classList.add('border-green-600');
+                    }).catch(e => {
+                        console.log("Play failed, need interaction:", e);
+                        label.innerText = '⚠️ 点击这里以允许播放 BGM';
+                        label.classList.replace('text-green-400', 'text-yellow-400');
+                        label.onclick = () => { audio.play(); label.innerText = '🎵 播放中!'; label.onclick = null; };
+                    });
+                };
+                audio.load();
+            }
+        }
+
+        // --- 音效引擎 (保留短促SFX) ---
+        let audioCtx = null;
+        function initAudio() { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } if (audioCtx.state === 'suspended') audioCtx.resume(); }
+        document.addEventListener('click', initAudio, { once: true });
+        
+        function playSound(type) {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); 
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hit') { 
+                osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1); 
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 1500;
+                osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); 
+                osc.start(now); osc.stop(now + 0.15); 
+            } 
+            else if (type === 'block') { 
+                osc.type = 'square'; osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(300, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15); 
+            } 
+            else if (type === 'heal') { 
+                osc.type = 'sine'; osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2); 
+            } 
+            else if (type === 'error') { 
+                osc.type = 'sawtooth'; osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(80, now + 0.15); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15); 
+            } 
+            else if (type === 'card') { 
+                osc.type = 'sine'; osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(now); osc.stop(now + 0.05); 
+            }
+        }
+
+        // --- 特效引擎 ---
+        function spawnFloatingText(targetId, text, colorClass) {
+            const el = document.getElementById(targetId); if (!el) return;
+            const rect = el.getBoundingClientRect(); const floater = document.createElement('div');
+            floater.innerText = text; floater.className = `floating-text text-3xl ${colorClass}`;
+            const offsetX = (Math.random() - 0.5) * 40;
+            floater.style.left = (rect.left + rect.width / 2 + offsetX) + 'px'; floater.style.top = (rect.top + rect.height / 2) + 'px';
+            document.body.appendChild(floater); setTimeout(() => floater.remove(), 800);
+        }
+        function triggerShake(targetId) {
+            const el = document.getElementById(targetId); if (!el) return;
+            el.classList.remove('shake', 'enemy-shake', 'damage-flash'); void el.offsetWidth;
+            if (targetId === 'game-app') el.classList.add('shake'); else el.classList.add('enemy-shake', 'damage-flash');
+        }
+        function spawnSlash(targetId) {
+            const el = document.getElementById(targetId); if (!el) return;
+            const rect = el.getBoundingClientRect(); const slash = document.createElement('div');
+            slash.className = 'slash-fx';
+            slash.style.left = (rect.left + rect.width / 2) + 'px'; slash.style.top = (rect.top + rect.height / 2) + 'px';
+            document.body.appendChild(slash); setTimeout(() => slash.remove(), 300);
+        }
+
+        // ==========================================
+        // 数据库
+        // ==========================================
+        const CARDS_DB = {
+            'strike': { name: '打击', cost: 1, type: 'attack', damage: 6, desc: '造成 6 点伤害' },
+            'strike+': { name: '打击+', cost: 1, type: 'attack', damage: 9, desc: '造成 9 点伤害' },
+            'defend': { name: '防御', cost: 1, type: 'skill', block: 5, desc: '获得 5 点格挡' },
+            'defend+': { name: '防御+', cost: 1, type: 'skill', block: 8, desc: '获得 8 点格挡' },
+            
+            'weeping_slash': { name: '泣血斩', cost: 0, type: 'attack', damage: 8, selfDamage: 2, desc: '失去 2 生命。造成 8 伤害。' },
+            'weeping_slash+': { name: '泣血斩+', cost: 0, type: 'attack', damage: 12, selfDamage: 2, desc: '失去 2 生命。造成 12 伤害。' },
+            'soul_bite': { name: '噬魂击', cost: 1, type: 'attack', damage: 7, heal: 3, desc: '造成 7 伤害。击杀回复 3 生命。' },
+            'soul_bite+': { name: '噬魂击+', cost: 1, type: 'attack', damage: 10, heal: 4, desc: '造成 10 伤害。击杀回复 4 生命。' },
+            'soul_rend': { name: '灵魂撕裂', cost: 1, type: 'attack', damage: 14, soulCost: 2, desc: '消耗 2 灵魂：造成 14 伤害。' },
+            'soul_rend+': { name: '灵魂撕裂+', cost: 1, type: 'attack', damage: 20, soulCost: 2, desc: '消耗 2 灵魂：造成 20 伤害。' },
+            'shadow_flurry': { name: '暗影连击', cost: 2, type: 'attack', damage: 4, times: 3, desc: '造成 4 伤害，重复 3 次。' },
+            'shadow_flurry+': { name: '暗影连击+', cost: 2, type: 'attack', damage: 5, times: 4, desc: '造成 5 伤害，重复 4 次。' },
+            
+            'crimson_thrust': { name: '猩红突刺', cost: 1, type: 'attack', damage: 9, applyWeak: 1, desc: '造成 9 伤害。给予1层虚弱。' },
+            'crimson_thrust+': { name: '猩红突刺+', cost: 1, type: 'attack', damage: 12, applyWeak: 2, desc: '造成 12 伤害。给予2层虚弱。' },
+            'bone_breaker': { name: '碎骨', cost: 2, type: 'attack', damage: 14, applyVulnerable: 2, desc: '造成 14 伤害。给予2层易伤。' },
+            'bone_breaker+': { name: '碎骨+', cost: 2, type: 'attack', damage: 18, applyVulnerable: 3, desc: '造成 18 伤害。给予3层易伤。' },
+            
+            'echo_of_pain': { name: '痛苦回响', cost: 1, type: 'attack', damage: 0, dynamicDamage: 'hpLoss', times: 2, desc: '造成本回合失去生命值等量的伤害两次。' },
+            'echo_of_pain+': { name: '痛苦回响+', cost: 1, type: 'attack', damage: 0, dynamicDamage: 'hpLoss', times: 3, desc: '造成本回合失去生命值等量的伤害三次。' },
+            'abyssal_sword': { name: '深渊重剑', cost: 3, type: 'attack', damage: 32, selfDamage: 5, desc: '造成 32 伤害。失去 5 生命。' },
+            'abyssal_sword+': { name: '深渊重剑+', cost: 3, type: 'attack', damage: 42, selfDamage: 5, desc: '造成 42 伤害。失去 5 生命。' },
+            'siphoning_strike': { name: '汲取打击', cost: 2, type: 'attack', damage: 10, heal: 5, desc: '造成 10 伤害。回复一半的生命。' },
+            'siphoning_strike+': { name: '汲取打击+', cost: 2, type: 'attack', damage: 14, heal: 7, desc: '造成 14 伤害。回复一半的生命。' },
+            'flesh_splatter': { name: '血肉飞溅', cost: 1, type: 'attack', damage: 8, aoe: true, selfDamage: 3, desc: '失去 3 生命。对所有敌人造成 8 伤害。' },
+            'flesh_splatter+': { name: '血肉飞溅+', cost: 1, type: 'attack', damage: 12, aoe: true, selfDamage: 3, desc: '失去 3 生命。对所有敌人造成 12 伤害。' },
+            'execute': { name: '处决', cost: 2, type: 'attack', damage: 10, executeThreshold: 0.3, executeDamage: 30, desc: '造成 10 伤害。敌人血量低于30%时造成30伤害。' },
+            'execute+': { name: '处决+', cost: 2, type: 'attack', damage: 14, executeThreshold: 0.4, executeDamage: 40, desc: '造成 14 伤害。敌人血量低于40%时造成40伤害。' },
+            'frenzied_claws': { name: '狂乱爪击', cost: 0, type: 'attack', damage: 4, soulGain: 1, desc: '造成 4 伤害。获得 1 层灵魂。' },
+            'frenzied_claws+': { name: '狂乱爪击+', cost: 0, type: 'attack', damage: 7, soulGain: 1, desc: '造成 7 伤害。获得 1 层灵魂。' },
+            'sacrificial_blade': { name: '献祭之刃', cost: 1, type: 'attack', damage: 0, loseAllBlockDealDmg: 7, desc: '清空格挡。每失去5格挡造成7伤害。' },
+            'sacrificial_blade+': { name: '献祭之刃+', cost: 1, type: 'attack', damage: 0, loseAllBlockDealDmg: 10, desc: '清空格挡。每失去5格挡造成10伤害。' },
+            'void_sweep': { name: '虚空横扫', cost: 2, type: 'attack', damage: 12, aoe: true, desc: '对所有敌人造成 12 伤害。' },
+            'void_sweep+': { name: '虚空横扫+', cost: 2, type: 'attack', damage: 16, aoe: true, desc: '对所有敌人造成 16 伤害。' },
+            'soul_pierce': { name: '灵魂穿刺', cost: 1, type: 'attack', damage: 7, ignoreBlock: true, desc: '造成 7 伤害。无视敌人的格挡。' },
+            'soul_pierce+': { name: '灵魂穿刺+', cost: 1, type: 'attack', damage: 10, ignoreBlock: true, desc: '造成 10 伤害。无视敌人的格挡。' },
+
+            'blood_shield': { name: '鲜血护盾', cost: 0, type: 'skill', block: 8, selfDamage: 2, desc: '失去 2 生命。获得 8 格挡。' },
+            'blood_shield+': { name: '鲜血护盾+', cost: 0, type: 'skill', block: 12, selfDamage: 2, desc: '失去 2 生命。获得 12 格挡。' },
+            'soul_barrier': { name: '灵魂屏障', cost: 1, type: 'skill', block: 7, bonusBlockSoulCost: 2, bonusBlock: 7, desc: '获得 7 格挡。若有 2 灵魂则消耗并额外获得 7 格挡。' },
+            'soul_barrier+': { name: '灵魂屏障+', cost: 1, type: 'skill', block: 10, bonusBlockSoulCost: 2, bonusBlock: 10, desc: '获得 10 格挡。若有 2 灵魂则消耗并额外获得 10 格挡。' },
+            'dark_pact': { name: '黑暗契约', cost: 1, type: 'skill', draw: 2, selfDamage: 3, desc: '失去 3 生命。抽 2 张牌。' },
+            'dark_pact+': { name: '黑暗契约+', cost: 1, type: 'skill', draw: 3, selfDamage: 3, desc: '失去 3 生命。抽 3 张牌。' },
+            'soul_extraction': { name: '灵魂提炼', cost: 1, type: 'skill', soulGain: 4, selfDamage: 5, desc: '失去 5 生命。获得 4 层灵魂。' },
+            'soul_extraction+': { name: '灵魂提炼+', cost: 1, type: 'skill', soulGain: 6, selfDamage: 5, desc: '失去 5 生命。获得 6 层灵魂。' },
+            'life_tap': { name: '生命分流', cost: 0, type: 'skill', energyGain: 1, selfDamage: 2, desc: '失去 2 生命。获得 1 能量。' },
+            'life_tap+': { name: '生命分流+', cost: 0, type: 'skill', energyGain: 2, selfDamage: 3, desc: '失去 3 生命。获得 2 能量。' },
+            'blood_rage': { name: '鲜血狂怒', cost: 0, type: 'skill', energyGain: 2, selfDamage: 4, desc: '失去 4 生命。获得 2 能量。' },
+            'blood_rage+': { name: '鲜血狂怒+', cost: 0, type: 'skill', energyGain: 3, selfDamage: 4, desc: '失去 4 生命。获得 3 能量。' },
+            'bone_shield': { name: '骨盾', cost: 2, type: 'skill', block: 15, selfDamage: 3, desc: '失去 3 生命。获得 15 格挡。' },
+            'bone_shield+': { name: '骨盾+', cost: 2, type: 'skill', block: 20, selfDamage: 3, desc: '失去 3 生命。获得 20 格挡。' },
+            'abyssal_whispers': { name: '深渊低语', cost: 1, type: 'skill', blockBySoul: 15, desc: '获得等同于灵魂的格挡（上限15）。' },
+            'abyssal_whispers+': { name: '深渊低语+', cost: 1, type: 'skill', blockBySoul: 25, desc: '获得等同于灵魂的格挡（上限25）。' }
+        };
+
+        const RELICS_DB = {
+            'deep_phylactery': { name: '深渊命匣', icon: '🏺', tier: 'starter', desc: '【专属初始】战斗开始获得2灵魂。首掉血/首回血额外+1灵魂。' },
+            'black_crown': { name: '漆黑王冠', icon: '👑', tier: 'boss', desc: '【Boss遗物】替换命匣：战斗开始3灵魂。前两次掉血/回血均额外+1灵魂。' },
+            'cursed_blood': { name: '受诅咒的鲜血', icon: '🩸', tier: 'boss', desc: '【Boss遗物】每回合额外获得 1 能量。你无法在篝火处休息回复生命。' },
+            'pain_amplifier': { name: '痛苦放大器', icon: '🎛️', tier: 'boss', desc: '【Boss遗物】每次受到敌人的未格挡伤害时，额外抽 1 张牌。' },
+            
+            'blood_idol': { name: '猩红圣杯', icon: '🍷', tier: 'uncommon', desc: '战斗中所有回复生命的效果额外+2。' },
+            'spiked_collar': { name: '倒刺项圈', icon: '📿', tier: 'common', desc: '因卡牌主动失去生命时，对随机敌人造成4点伤害。' },
+            'soul_bell': { name: '镇魂铃', icon: '🔔', tier: 'uncommon', desc: '每当你消耗灵魂时，获得等同于消耗层数的临时格挡。' },
+            'bat_wing': { name: '嗜血断翼', icon: '🦇', tier: 'common', desc: '击杀敌人回复 4 点生命。' },
+            'roasted_apple': { name: '烤苹果', icon: '🍎', tier: 'common', desc: '拾取时最大生命值+7。' },
+            'iron_scales': { name: '铁鳞片', icon: '🐉', tier: 'common', desc: '战斗开始获得3层反伤。' },
+            'lucky_rabbit': { name: '幸运兔脚', icon: '🐾', tier: 'common', desc: '每场战斗第一回合额外抽2张牌。' },
+            'torn_bandage': { name: '破旧绷带', icon: '🩹', tier: 'common', desc: '战斗结束时，回复2点生命。' },
+            'piggy_bank': { name: '存钱罐', icon: '🐷', tier: 'common', desc: '每进入一个新房间获得5金币。' },
+            'lucky_coin': { name: '幸运金币', icon: '🪙', tier: 'common', desc: '商店的每次移除卡牌操作更便宜。' },
+            'paper_crane': { name: '折纸鹤', icon: '🦢', tier: 'uncommon', desc: '虚弱敌人的伤害额外降低 1 点。' },
+            'golden_idol': { name: '黄金神像', icon: '🗿', tier: 'uncommon', desc: '从怪物身上获得的金币增加25%。' },
+            'ice_cream': { name: '融化冰淇淋', icon: '🍦', tier: 'rare', desc: '回合结束时未使用的能量保留。' }
+        };
+
+        const MONSTERS_DB = {
+            'bloodbat': { name: '巨型血蝠', hp: 32, icon: '🦇', intents: [{type: 'attack', val: 7}, {type: 'block', val: 5}] },
+            'wraith': { name: '迷雾怨灵', hp: 45, icon: '👻', intents: [{type: 'attack', val: 9}, {type: 'debuff', buffType: 'weak', val: 1}] },
+            'berserker': { name: '森林狂战士', hp: 56, icon: '👹', intents: [{type: 'attack', val: 8}, {type: 'attack', val: 14}] },
+            'lycan': { name: '嗜血狼妖(精英)', hp: 95, icon: '🐺', isElite: true, intents: [{type: 'attack', val: 14}, {type: 'attack', val: 6, times: 3}] },
+            'tree': { name: '荆棘树妖(精英)', hp: 110, icon: '🌲', isElite: true, intents: [{type: 'attack', val: 20}, {type: 'block', val: 15}] },
+            'gravekeepers': { name: '遗忘守墓人(精英)', hp: 80, icon: '🧟', isElite: true, intents: [{type: 'attack', val: 10}, {type: 'debuff', buffType: 'vulnerable', val: 2}] },
+            'boss1': { name: '腐败缝合怪(BOSS)', hp: 150, icon: '🥩', isBoss: true, intents: [{type: 'attack', val: 18}, {type: 'debuff', buffType: 'weak', val: 2}, {type: 'block', val: 15}] }
+        };
+
+        const EVENTS_POOL = [
+            {
+                id: 'altar', title: "猩红祭坛", desc: "你在林间空地发现了一座古老的石制祭坛，上面布满了干涸的暗红色血迹。你能感觉到你的血液在血管里不安地跳动，仿佛祭坛在渴求着什么。",
+                opts: [
+                    { t: "【献祭】 失去 15 生命。获得 100 金币。", f: () => { playSound('hit'); modifyHp(-15); game.gold += 100; endRoom(); } },
+                    { t: "【鲜血共鸣】 (专属) 失去 4 最大生命。将牌库中的一张打击变化为《泣血斩》。", f: () => { 
+                        playSound('hit'); game.maxHp -= 4; 
+                        let idx = game.deck.indexOf('strike'); if(idx > -1) game.deck[idx] = 'weeping_slash'; modifyHp(0); 
+                        showModal("卡牌变化", `
+                            <div class="text-zinc-300 mb-6 text-center">祭坛的力量污染了你的基础卡牌...</div>
+                            <div class="flex justify-center">${generateCardHTML(CARDS_DB['weeping_slash'])}</div>
+                            <button onclick="closeModal(); endRoom();" class="mt-6 bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded text-white font-bold w-full">接受命运</button>
+                        `);
+                    } },
+                    { t: "【离开】 忽略祭坛", f: () => { endRoom(); } }
+                ]
+            },
+            {
+                id: 'thicket', title: "痛苦荆棘丛", desc: "一条狭窄的小径被长满黑色尖刺的藤蔓彻底封死。你看到一具骸骨，他的钱袋正闪闪发光。想拿到钱必须把手伸进荆棘。",
+                opts: [
+                    { t: "【伸手】 失去 6 点生命。获得 30 金币。", f: () => { playSound('hit'); modifyHp(-6); game.gold += 30; endRoom(); } },
+                    { t: "【离开】 什么也不做。", f: () => { endRoom(); } }
+                ]
+            },
+            {
+                id: 'idol', title: "腐朽的神像", desc: "一尊木制的诡异神像被遗弃在泥潭里。神像下方有一个小小的投币口。",
+                opts: [
+                    { t: "【投入硬币】 失去 10 金币。获得一张卡牌《鲜血护盾》。", f: () => { 
+                        playSound('heal'); game.gold = Math.max(0, game.gold - 10); game.deck.push('blood_shield'); 
+                        showModal("获得卡牌", `
+                            <div class="flex justify-center mb-6">${generateCardHTML(CARDS_DB['blood_shield'])}</div>
+                            <button onclick="closeModal(); endRoom();" class="bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded text-white font-bold w-full">收下</button>
+                        `);
+                    } },
+                    { t: "【离开】 不理会。", f: () => { endRoom(); } }
+                ]
+            }
+        ];
+
+        let game = {
+            state: 'start', hp: PLAYER_INITIAL_HP, maxHp: PLAYER_INITIAL_HP,
+            gold: 99, soul: 0, energy: 3, maxEnergy: 3, deck: [...INITIAL_DECK], relics: ['deep_phylactery'], // 深渊命匣一直保留
+            map: [], currentFloor: -1, currentNodeIdx: -1, removeCost: 75, combat: null, turnHpLoss: 0
+        };
+
+        function generateCardHTML(card, clickAction = '', extraClass = '', extraStyle = '') {
+            return `
+                <div onclick="${clickAction}" class="card card-grid-item p-3 flex flex-col justify-between cursor-pointer border border-zinc-600 ${extraClass}" style="${extraStyle}">
+                    <div class="flex justify-between items-start"><div class="text-[11px] font-bold ${card.name.includes('+')?'text-green-400':'text-white'} leading-tight">${card.name}</div><div class="w-5 h-5 rounded-full bg-indigo-900 border border-indigo-400 flex items-center justify-center text-[10px] text-white shadow-lg">${card.cost}</div></div>
+                    <div class="flex-grow flex items-center justify-center text-4xl opacity-40 filter drop-shadow-md">${card.type === 'attack' ? '⚔️' : '🛡️'}</div>
+                    <div class="text-[9px] text-zinc-300 bg-black/70 p-1.5 rounded font-bold leading-snug tracking-wide">${card.desc}</div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // 核心流程：开局遗物选择 -> 树状网状地图
+        // ==========================================
+        window.onload = initStartScreen;
+
+        function initStartScreen() {
+            game.state = 'start'; hideAllViews(); 
+            document.getElementById('top-bar').classList.add('hidden');
+            document.getElementById('start-view').classList.remove('hidden');
+            
+            const container = document.getElementById('start-relics'); container.innerHTML = '';
+            
+            let pool = Object.keys(RELICS_DB).filter(r => RELICS_DB[r].tier !== 'starter' && RELICS_DB[r].tier !== 'boss');
+            pool = pool.sort(() => 0.5 - Math.random());
+            const choices = pool.slice(0, 3);
+            
+            choices.forEach(rKey => {
+                const relic = RELICS_DB[rKey];
+                const el = document.createElement('div');
+                el.className = "flex flex-col items-center gap-4 bg-zinc-900 border border-zinc-700 p-6 rounded-xl cursor-pointer hover:border-violet-500 hover:scale-105 transition-all w-64 text-center shadow-xl relative z-10";
+                el.innerHTML = `
+                    <div class="text-6xl filter drop-shadow-lg mb-2">${relic.icon}</div>
+                    <div class="text-xl font-bold text-yellow-500">${relic.name}</div>
+                    <div class="text-sm text-zinc-400 h-16">${relic.desc}</div>
+                    <div class="mt-4 text-xs font-bold text-violet-400 bg-zinc-800 px-3 py-1 rounded">点击获取</div>
+                `;
+                el.onclick = () => {
+                    game.relics.push(rKey); 
+                    initAudio(); 
+                    playSound('block');
+                    document.getElementById('top-bar').classList.remove('hidden');
+                    generateMap(); endRoom(); 
+                };
+                container.appendChild(el);
+            });
+        }
+
+        // --- 杀戮尖塔同款：分层树状地图生成算法 ---
+        function generateMap() {
+            game.map = Array(15).fill(null).map(() => Array(5).fill(null));
+            
+            // 0层 (起始层) 分配 5 个战斗节点
+            for (let i = 0; i < 5; i++) {
+                game.map[0][i] = { id: `0-${i}`, type: 'combat', visited: false, children: [] };
+            }
+
+            // 1-13层 生成向上的无交叉路径
+            for (let i = 0; i < 13; i++) {
+                let min_k = 0;
+                for (let j = 0; j < 5; j++) {
+                    if (game.map[i][j] !== null) {
+                        let possible = [j-1, j, j+1].filter(x => x >= 0 && x < 5 && x >= min_k);
+                        if (possible.length === 0) {
+                            possible = [Math.max(min_k, j)];
+                            if (possible[0] >= 5) possible = [4];
+                        }
+                        
+                        let numConnections = (Math.random() < 0.3 && possible.length > 1) ? 2 : 1;
+                        possible.sort(() => 0.5 - Math.random());
+                        let picked = possible.slice(0, numConnections).sort((a,b) => a-b);
+                        
+                        min_k = Math.max(min_k, picked[picked.length - 1] || 0);
+
+                        for (let k of picked) {
+                            if (!game.map[i+1][k]) {
+                                game.map[i+1][k] = { id: `${i+1}-${k}`, type: getRandomNodeType(i + 1), visited: false, children: [] };
+                            }
+                            if (!game.map[i][j].children.includes(k)) {
+                                game.map[i][j].children.push(k);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 13层收束到 14层的 Boss
+            game.map[14][2] = { id: `14-2`, type: 'boss', visited: false, children: [] };
+            for (let j = 0; j < 5; j++) {
+                if (game.map[13][j] !== null) {
+                    game.map[13][j].children.push(2);
+                }
+            }
+
+            renderMap();
+        }
+
+        function getRandomNodeType(floor) {
+            if (floor === 8) return 'rest';
+            const r = Math.random();
+            if (r < 0.45) return 'combat';
+            if (r < 0.70) return 'event';
+            if (r < 0.85) return 'shop';
+            return 'elite';
+        }
+
+        function hideAllViews() { ['start-view', 'combat-view', 'event-view', 'rest-view', 'shop-view', 'reward-view', 'map-view', 'player-controls'].forEach(id => { document.getElementById(id).classList.add('hidden'); }); }
+        
+        function updateGlobalUI() {
+            document.getElementById('hp-text').innerText = `${Math.ceil(game.hp)}/${game.maxHp}`;
+            document.getElementById('hp-bar').style.width = `${(game.hp / game.maxHp) * 100}%`;
+            document.getElementById('gold-text').innerText = game.gold;
+            document.getElementById('floor-display').innerText = `第 ${game.currentFloor + 1} 层`;
+            document.getElementById('soul-val').innerText = game.soul;
+            
+            const relicsContainer = document.getElementById('relics'); relicsContainer.innerHTML = '';
+            game.relics.forEach(r => {
+                const data = RELICS_DB[r] || {name: '未知', icon: '❓', desc: '?'};
+                const el = document.createElement('div'); el.className = "relic-container w-8 h-8 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center cursor-help flex-shrink-0 z-10";
+                el.innerHTML = `${data.icon}<div class="relic-tooltip"><strong class="text-yellow-400 block mb-1">${data.name}</strong><span class="text-zinc-300 text-xs">${data.desc}</span></div>`;
+                relicsContainer.appendChild(el);
+            });
+        }
+
+        function viewMap() { 
+            hideAllViews(); document.getElementById('map-view').classList.remove('hidden'); 
+            document.getElementById('return-room-btn').classList.toggle('hidden', game.state === 'map'); 
+            renderMap(); 
+        }
+        function returnToActiveRoom() { hideAllViews(); document.getElementById(`${game.state}-view`).classList.remove('hidden'); if (game.state === 'combat') document.getElementById('player-controls').classList.remove('hidden'); }
+        function endRoom() { game.state = 'map'; viewMap(); updateGlobalUI(); }
+
+        function renderMap() {
+            const container = document.getElementById('map-container'); 
+            container.innerHTML = '<svg id="map-lines" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>';
+            
+            for (let i = 14; i >= 0; i--) {
+                const rowDiv = document.createElement('div'); rowDiv.className = "map-row";
+                
+                for (let j = 0; j < 5; j++) {
+                    const node = game.map[i][j];
+                    const wrapper = document.createElement('div');
+                    wrapper.className = "map-node-wrapper";
+
+                    if (node) {
+                        const el = document.createElement('div');
+                        el.id = `node-${i}-${j}`;
+                        
+                        let isReachable = false;
+                        if (game.currentFloor === -1 && i === 0) isReachable = true;
+                        if (game.currentFloor !== -1 && i === game.currentFloor + 1) {
+                            const parent = game.map[game.currentFloor][game.currentNodeIdx];
+                            if (parent && parent.children.includes(j)) isReachable = true;
+                        }
+                        
+                        const isCurrent = game.currentFloor === i && game.currentNodeIdx === j;
+                        const interactivity = (isReachable && game.state === 'map') ? 'reachable' : '';
+                        el.className = `node ${interactivity} ${isCurrent ? 'current' : ''} ${node.visited ? 'visited' : ''}`;
+                        el.innerHTML = node.type === 'combat'?'⚔️':node.type === 'elite'?'👿':node.type === 'event'?'❓':node.type === 'shop'?'💰':node.type === 'rest'?'🔥':'💀';
+                        if (isReachable && game.state === 'map') el.onclick = () => selectNode(i, j);
+                        wrapper.appendChild(el);
+                    }
+                    rowDiv.appendChild(wrapper);
+                }
+                container.appendChild(rowDiv);
+            }
+            setTimeout(drawMapLines, 50); 
+        }
+
+        function drawMapLines() {
+            const svg = document.getElementById('map-lines'); if(!svg) return; svg.innerHTML = '';
+            const containerRect = document.getElementById('map-container').getBoundingClientRect();
+            
+            for(let i=0; i<14; i++){
+                for(let j=0; j<5; j++) {
+                    const node = game.map[i][j];
+                    if(!node) continue;
+                    
+                    const startEl = document.getElementById(`node-${i}-${j}`); if(!startEl) continue;
+                    const startRect = startEl.getBoundingClientRect();
+                    const x1 = startRect.left - containerRect.left + startRect.width/2;
+                    const y1 = startRect.top - containerRect.top + startRect.height/2;
+
+                    node.children.forEach(cIdx => {
+                        const endEl = document.getElementById(`node-${i+1}-${cIdx}`); if(!endEl) return;
+                        const endRect = endEl.getBoundingClientRect();
+                        const x2 = endRect.left - containerRect.left + endRect.width/2;
+                        const y2 = endRect.top - containerRect.top + endRect.height/2;
+                        
+                        let isReachable = (game.currentFloor === i && game.currentNodeIdx === j);
+                        let isTaken = (node.visited && game.map[i+1][cIdx].visited && game.currentFloor >= i+1); 
+
+                        let color = '#3f3f46'; let strokeWidth = 2;
+                        if (isTaken) { color = '#fbbf24'; strokeWidth = 4; } 
+                        else if (isReachable) { color = '#a78bfa'; strokeWidth = 3; } 
+                        
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+                        line.setAttribute('stroke', color); line.setAttribute('stroke-width', strokeWidth);
+                        svg.appendChild(line);
+                    });
+                }
+            }
+        }
+        window.addEventListener('resize', () => { if(game.state === 'map') drawMapLines(); });
+
+        function selectNode(floor, idx) {
+            if (game.state !== 'map') return;
+            if (game.relics.includes('piggy_bank')) { game.gold += 5; spawnFloatingText('gold-text', '+5🪙', 'text-yellow-400'); }
+            
+            game.currentFloor = floor; game.currentNodeIdx = idx; game.map[floor][idx].visited = true;
+            const node = game.map[floor][idx]; hideAllViews();
+            if (['combat', 'boss', 'elite'].includes(node.type)) { game.state = 'combat'; initCombat(node.type); }
+            else if (node.type === 'event') { game.state = 'event'; initEvent(); }
+            else if (node.type === 'rest') { game.state = 'rest'; initRest(); }
+            else if (node.type === 'shop') { game.state = 'shop'; initShop(); }
+            updateGlobalUI();
+        }
+
+        // ==========================================
+        // 战斗系统与 Buff 逻辑
+        // ==========================================
+        function getPlayerDamage(baseDmg, target) {
+            let dmg = baseDmg;
+            if(game.combat.playerBuffs.weak > 0) dmg = Math.floor(dmg * 0.75);
+            if(target.buffs.vulnerable > 0) dmg = Math.floor(dmg * 1.5);
+            return dmg;
+        }
+
+        function getEnemyDamage(baseDmg, en) {
+            let dmg = baseDmg;
+            if(en.buffs.weak > 0) dmg = Math.floor(dmg * 0.75);
+            if(game.combat.playerBuffs.vulnerable > 0) dmg = Math.floor(dmg * 1.5);
+            if(game.relics.includes('paper_crane') && en.buffs.weak > 0) dmg -= 1;
+            return dmg;
+        }
+
+        function initCombat(type) {
+            document.getElementById('combat-view').classList.remove('hidden'); document.getElementById('player-controls').classList.remove('hidden'); document.getElementById('battle-log').innerHTML = '';
+            game.soul = 0; 
+            
+            let keys = Object.keys(MONSTERS_DB);
+            if (type === 'boss') keys = keys.filter(k => MONSTERS_DB[k].isBoss);
+            else if (type === 'elite') keys = keys.filter(k => MONSTERS_DB[k].isElite);
+            else keys = keys.filter(k => !MONSTERS_DB[k].isElite && !MONSTERS_DB[k].isBoss);
+            
+            let enemyList = [];
+            const key1 = keys[Math.floor(Math.random() * keys.length)];
+            enemyList.push({ ...MONSTERS_DB[key1], hp: MONSTERS_DB[key1].hp, maxHp: MONSTERS_DB[key1].hp, currentIntentIdx: 0, id: 'enemy-0', block: 0, buffs: {weak:0, vulnerable:0} });
+            if (type === 'combat' && Math.random() < 0.3) {
+                const key2 = keys[Math.floor(Math.random() * keys.length)];
+                enemyList.push({ ...MONSTERS_DB[key2], hp: MONSTERS_DB[key2].hp, maxHp: MONSTERS_DB[key2].hp, currentIntentIdx: 0, id: 'enemy-1', block: 0, buffs: {weak:0, vulnerable:0} });
+            }
+
+            game.combat = { 
+                enemies: enemyList, draw: [...game.deck].sort(() => Math.random() - 0.5), hand: [], discard: [], 
+                playerBlock: 0, playerBuffs: {weak: 0, vulnerable: 0},
+                hpLossThisTurn: false, hpGainThisTurn: false, isElite: type === 'elite', isBoss: type === 'boss' 
+            };
+            
+            if(game.relics.includes('black_crown')) game.soul += 3; else if (game.relics.includes('deep_phylactery')) game.soul += 2;
+            if (game.relics.includes('iron_scales')) { spawnFloatingText('player-avatar-container', '荆棘!', 'text-green-400'); }
+            
+            startTurn(true);
+        }
+
+        function startTurn(isFirstTurn = false) {
+            game.combat.playerBlock = 0; 
+            game.energy = game.maxEnergy + (game.relics.includes('cursed_blood') ? 1 : 0);
+            game.combat.hpLossThisTurn = false; game.combat.hpGainThisTurn = false;
+            game.turnHpLoss = 0; 
+            
+            if(game.combat.playerBuffs.weak > 0) game.combat.playerBuffs.weak--;
+            if(game.combat.playerBuffs.vulnerable > 0) game.combat.playerBuffs.vulnerable--;
+
+            let drawCount = 5; if (isFirstTurn && game.relics.includes('lucky_rabbit')) drawCount += 2;
+            drawCards(drawCount); renderCombat();
+        }
+
+        function drawCards(n) {
+            for (let i = 0; i < n; i++) {
+                if (game.combat.draw.length === 0) { game.combat.draw = [...game.combat.discard].sort(() => Math.random() - 0.5); game.combat.discard = []; }
+                if (game.combat.draw.length > 0 && game.combat.hand.length < 10) game.combat.hand.push(game.combat.draw.pop());
+            }
+        }
+
+        function renderCombat() {
+            if(game.state !== 'combat') return;
+            const enemyDiv = document.getElementById('enemies'); enemyDiv.innerHTML = '';
+            game.combat.enemies.forEach((en) => {
+                const intent = en.intents[en.currentIntentIdx];
+                let intentIcon = ''; let intentTooltipText = '';
+                
+                if(intent.type === 'attack') {
+                    const dmg = getEnemyDamage(intent.val, en);
+                    intentIcon = `⚔️ ${dmg}${intent.times ? 'x'+intent.times : ''}`;
+                    intentTooltipText = `<strong class="text-red-400">准备攻击</strong><br>这名敌人准备对你造成 ${dmg} 点伤害${intent.times ? '，共 ' + intent.times + ' 次' : ''}。`;
+                } else if(intent.type === 'block') {
+                    intentIcon = `🛡️ ${intent.val}`;
+                    intentTooltipText = `<strong class="text-blue-400">准备防御</strong><br>这名敌人准备获得 ${intent.val} 点格挡。`;
+                } else if(intent.type === 'debuff') {
+                    intentIcon = `⚡`;
+                    const bName = intent.buffType === 'weak' ? '虚弱(伤害降低25%)' : '易伤(受击增加50%)';
+                    intentTooltipText = `<strong class="text-purple-400">准备施加负面效果</strong><br>这名敌人准备给予你 ${intent.val} 层${bName}。`;
+                }
+
+                const el = document.createElement('div'); el.id = en.id; el.className = `flex flex-col items-center gap-2 ${en.hp <= 0 ? 'hidden' : 'relative'}`;
+                const enemyBlockHtml = en.block > 0 ? `<div class="absolute -right-2 top-8 bg-blue-600 text-white w-6 h-6 rounded flex items-center justify-center font-bold text-[10px] border border-white z-10 shadow-lg">${en.block}</div>` : '';
+                
+                let eBuffs = '';
+                if(en.buffs.weak > 0) eBuffs += `<span class="bg-zinc-800 text-purple-400 border border-purple-500 rounded px-1 text-[10px]">🔽 ${en.buffs.weak}</span> `;
+                if(en.buffs.vulnerable > 0) eBuffs += `<span class="bg-zinc-800 text-red-400 border border-red-500 rounded px-1 text-[10px]">💔 ${en.buffs.vulnerable}</span> `;
+
+                el.innerHTML = `
+                    <div class="relic-container mb-2 flex flex-col items-center">
+                        <span class="text-xs font-bold text-red-400 bg-black/60 px-2 py-1 rounded shadow-lg cursor-help">${intentIcon}</span>
+                        <div class="relic-tooltip intent-tooltip text-white z-50 text-xs">${intentTooltipText}</div>
+                    </div>
+                    <div class="text-6xl mb-2 filter drop-shadow-lg relative">${en.icon}${enemyBlockHtml}</div>
+                    <div class="flex gap-1 mb-1 h-3">${eBuffs}</div>
+                    <div class="w-32 h-3 bg-zinc-800 rounded-full border border-zinc-700 relative"><div class="h-full bg-red-600 transition-all" style="width:${(en.hp / en.maxHp) * 100}%"></div><span class="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">${en.hp}/${en.maxHp}</span></div>
+                    <span class="text-[10px] text-zinc-400 font-bold">${en.name}</span>
+                `;
+                enemyDiv.appendChild(el);
+            });
+
+            let pBuffs = '';
+            if(game.combat.playerBuffs.weak > 0) pBuffs += `<span class="bg-zinc-800 text-purple-400 border border-purple-500 rounded px-1 text-xs font-bold shadow-lg">🔽 ${game.combat.playerBuffs.weak} 虚弱</span>`;
+            if(game.combat.playerBuffs.vulnerable > 0) pBuffs += `<span class="bg-zinc-800 text-red-400 border border-red-500 rounded px-1 text-xs font-bold shadow-lg">💔 ${game.combat.playerBuffs.vulnerable} 易伤</span>`;
+            document.getElementById('player-buffs-ui').innerHTML = pBuffs;
+
+            const handDiv = document.getElementById('hand-display'); handDiv.innerHTML = '';
+            game.combat.hand.forEach((cardKey, idx) => {
+                const card = CARDS_DB[cardKey];
+                const canAfford = game.energy >= card.cost && (!card.soulCost || game.soul >= card.soulCost);
+                const html = generateCardHTML(card, canAfford ? `playCard(${idx})` : '', canAfford ? 'affordable' : 'unaffordable');
+                const wrapper = document.createElement('div'); wrapper.innerHTML = html; const el = wrapper.firstElementChild;
+                el.style.zIndex = idx; el.style.transform = `rotate(${(idx - game.combat.hand.length/2) * 3}deg)`;
+                handDiv.appendChild(el);
+            });
+            document.getElementById('energy-now').innerText = game.energy; document.getElementById('draw-count').innerText = game.combat.draw.length; document.getElementById('discard-count').innerText = game.combat.discard.length; document.getElementById('player-block').innerText = game.combat.playerBlock; document.getElementById('player-block').classList.toggle('hidden', game.combat.playerBlock <= 0); updateGlobalUI();
+        }
+
+        async function playCard(idx) {
+            playSound('card');
+            const key = game.combat.hand[idx]; const card = CARDS_DB[key];
+            game.energy -= card.cost;
+            if (card.soulCost) { game.soul -= card.soulCost; if (game.relics.includes('soul_bell')) { game.combat.playerBlock += card.soulCost; spawnFloatingText('player-avatar-container', `+${card.soulCost}🛡️`, 'text-blue-400'); } }
+
+            const targets = card.aoe ? game.combat.enemies.filter(e => e.hp > 0) : [game.combat.enemies.find(e => e.hp > 0)];
+            if ((card.damage !== undefined || card.dynamicDamage) && targets[0]) {
+                let times = card.times || 1;
+                for(let t=0; t<times; t++) {
+                    targets.forEach(target => {
+                        let baseDamage = card.damage || 0;
+                        if (card.executeThreshold && (target.hp / target.maxHp) <= card.executeThreshold) baseDamage = card.executeDamage;
+                        if (card.bonusDmgIfSoul && game.soul > 5) baseDamage += card.bonusDmgIfSoul;
+                        if (card.bonusDmgIfHpLoss && game.turnHpLoss > 0) baseDamage += card.bonusDmgIfHpLoss;
+                        if (card.dynamicDamage === 'hpLoss') baseDamage = game.turnHpLoss;
+
+                        let finalDmg = getPlayerDamage(baseDamage, target);
+
+                        if (!card.ignoreBlock && target.block > 0) {
+                            if (target.block >= finalDmg) { target.block -= finalDmg; finalDmg = 0; playSound('block'); } 
+                            else { finalDmg -= target.block; target.block = 0; }
+                        }
+                        if (finalDmg > 0) { 
+                            target.hp -= finalDmg; 
+                            playSound('hit'); 
+                            triggerShake(target.id); 
+                            spawnSlash(target.id); 
+                            spawnFloatingText(target.id, `-${finalDmg}`, 'text-red-500'); 
+                        }
+                        
+                        if (card.applyWeak) target.buffs.weak += card.applyWeak;
+                        if (card.applyVulnerable) target.buffs.vulnerable += card.applyVulnerable;
+
+                        if (target.hp <= 0) { target.hp = 0; target.block = 0; if (card.heal) modifyHp(card.heal + (game.relics.includes('blood_idol') ? 2 : 0), true); if (card.soulOnKill) game.soul += card.soulOnKill; }
+                    });
+                }
+            }
+            if (card.block) {
+                let actualBlock = card.block;
+                if (card.bonusBlockSoulCost && game.soul >= card.bonusBlockSoulCost) { game.soul -= card.bonusBlockSoulCost; actualBlock += card.bonusBlock; }
+                if (card.blockBySoul) actualBlock = Math.min(card.blockBySoul, game.soul);
+                game.combat.playerBlock += actualBlock; playSound('block'); spawnFloatingText('player-avatar-container', `+${actualBlock}🛡️`, 'text-blue-400');
+            }
+            if (card.loseAllBlockDealDmg) {
+                const dmg = Math.floor(game.combat.playerBlock / 5) * card.loseAllBlockDealDmg;
+                game.combat.playerBlock = 0;
+                if(targets[0] && dmg > 0) { targets[0].hp -= dmg; spawnSlash(targets[0].id); spawnFloatingText(targets[0].id, `-${dmg}`, 'text-red-500'); }
+            }
+            if (card.selfDamage) modifyHp(-card.selfDamage, true); 
+            if (card.draw) drawCards(card.draw);
+            if (card.drawNextTurn) { drawCards(card.drawNextTurn); }
+            if (card.energyGain) { game.energy += card.energyGain; spawnFloatingText('player-avatar-container', `+${card.energyGain}🔋`, 'text-yellow-400'); }
+            if (card.soulGain) { game.soul += card.soulGain; spawnFloatingText('player-avatar-container', `+${card.soulGain}✨`, 'text-violet-400'); }
+            if (card.syncSoulToHand) { game.soul = game.combat.hand.length; spawnFloatingText('player-avatar-container', `共鸣!`, 'text-violet-400'); }
+
+            game.combat.discard.push(game.combat.hand.splice(idx, 1)[0]); renderCombat(); setTimeout(checkVictory, 300);
+        }
+
+        function modifyHp(amt, isCardEffect = false) {
+            game.hp += amt; if (game.hp > game.maxHp) game.hp = game.maxHp;
+            if (amt < 0) {
+                game.turnHpLoss += Math.abs(amt);
+                playSound('hit'); triggerShake('game-app'); spawnFloatingText('player-avatar-container', amt, 'text-red-500');
+                
+                if (game.relics.includes('pain_amplifier') && !isCardEffect && game.state === 'combat') {
+                    drawCards(1); spawnFloatingText('player-avatar-container', '抽牌!', 'text-yellow-400'); renderCombat();
+                }
+
+                let gain = 1; if (!game.combat?.hpLossThisTurn) { gain++; if(game.combat) game.combat.hpLossThisTurn = true; }
+                if(game.relics.includes('black_crown') && game.combat && !game.combat.hpLossThisTurn) gain++;
+                game.soul += gain; spawnFloatingText('player-avatar-container', `+${gain}✨`, 'text-violet-400');
+                
+                if (isCardEffect && game.relics.includes('spiked_collar')) {
+                    const alive = game.combat.enemies.filter(e => e.hp > 0);
+                    if (alive.length > 0) { const target = alive[Math.floor(Math.random() * alive.length)]; target.hp -= 4; spawnSlash(target.id); spawnFloatingText(target.id, "-4(项圈)", 'text-orange-400'); }
+                }
+            } else if (amt > 0) {
+                playSound('heal'); spawnFloatingText('player-avatar-container', `+${amt}`, 'text-green-400');
+                let gain = 1; if (!game.combat?.hpGainThisTurn) { gain++; if(game.combat) game.combat.hpGainThisTurn = true; }
+                if(game.relics.includes('black_crown') && game.combat && !game.combat.hpGainThisTurn) gain++;
+                game.soul += gain; spawnFloatingText('player-avatar-container', `+${gain}✨`, 'text-violet-400');
+            }
+            updateGlobalUI();
+            if (game.hp <= 0) { game.hp = 0; playSound('error'); showModal("死亡", "深渊已将你彻底吞噬。<br><br><button onclick='location.reload()' class='mt-4 bg-red-900 hover:bg-red-800 px-6 py-2 rounded text-white font-bold'>重新开始</button>", false); }
+        }
+
+        function executeEndTurn() {
+            playSound('card'); let delay = 0;
+            if (!game.relics.includes('ice_cream')) { game.energy = 0; }
+            
+            game.combat.enemies.forEach(en => { en.block = 0; });
+            game.combat.enemies.forEach(en => {
+                if (en.hp <= 0) return;
+                const intent = en.intents[en.currentIntentIdx];
+                setTimeout(() => {
+                    if (en.hp <= 0) return; 
+                    if (intent.type === 'attack') {
+                        let times = intent.times || 1;
+                        for(let i=0; i<times; i++) {
+                            setTimeout(() => {
+                                triggerShake(en.id);
+                                let dmg = getEnemyDamage(intent.val, en);
+                                dmg = Math.max(0, dmg - game.combat.playerBlock);
+                                if (game.combat.playerBlock > 0) { game.combat.playerBlock = Math.max(0, game.combat.playerBlock - getEnemyDamage(intent.val, en)); playSound('block'); }
+                                if (dmg > 0) { modifyHp(-dmg); }
+                                
+                                if (game.relics.includes('iron_scales')) {
+                                    en.hp -= 3; spawnSlash(en.id); spawnFloatingText(en.id, '-3(反伤)', 'text-orange-400');
+                                    if(en.hp <= 0) en.hp = 0;
+                                }
+                                document.getElementById('player-block').innerText = game.combat.playerBlock;
+                            }, i * 200);
+                        }
+                    } else if (intent.type === 'block') {
+                        en.block += intent.val; triggerShake(en.id); spawnFloatingText(en.id, `+${intent.val}🛡️`, 'text-blue-400'); renderCombat();
+                    } else if (intent.type === 'debuff') {
+                        if(intent.buffType === 'weak') game.combat.playerBuffs.weak += intent.val;
+                        if(intent.buffType === 'vulnerable') game.combat.playerBuffs.vulnerable += intent.val;
+                        spawnFloatingText('player-avatar-container', intent.buffType==='weak'?'虚弱':'易伤', 'text-purple-400');
+                    }
+                    en.currentIntentIdx = (en.currentIntentIdx + 1) % en.intents.length;
+                    
+                    if(en.buffs.weak > 0) en.buffs.weak--;
+                    if(en.buffs.vulnerable > 0) en.buffs.vulnerable--;
+                }, delay);
+                delay += 800; 
+            });
+
+            setTimeout(() => {
+                game.combat.discard.push(...game.combat.hand); game.combat.hand = [];
+                if(game.hp > 0) startTurn();
+            }, delay + 200);
+        }
+
+        function checkVictory() {
+            if (game.combat.enemies.every(e => e.hp <= 0)) {
+                log("战斗胜利！"); game.soul = 0; 
+                if (game.relics.includes('torn_bandage')) modifyHp(2); 
+                updateGlobalUI(); 
+                if(game.combat.isBoss) { playSound('heal'); showModal("胜利！", "你击败了本层的最终Boss。<br><button onclick='location.reload()' class='mt-4 bg-yellow-600 px-6 py-2 rounded font-bold text-white'>再来一局</button>", false); } 
+                else { setTimeout(() => showRewardScreen(game.combat.isElite), 800); }
+            }
+        }
+
+        function showRewardScreen(isElite) {
+            game.state = 'reward'; hideAllViews(); document.getElementById('reward-view').classList.remove('hidden');
+            const list = document.getElementById('reward-list'); list.innerHTML = '';
+            let goldAmt = Math.floor(Math.random() * 15) + (isElite ? 25 : 10);
+            if(game.relics.includes('golden_idol')) goldAmt = Math.floor(goldAmt * 1.25);
+            list.innerHTML += `<button onclick="claimReward(this, () => { game.gold += ${goldAmt}; playSound('heal'); updateGlobalUI(); })" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 p-3 rounded text-left flex items-center gap-3"><span class="text-2xl">🪙</span> <span class="font-bold text-yellow-400">获得 ${goldAmt} 金币</span></button>`;
+            if (isElite) {
+                const unowned = Object.keys(RELICS_DB).filter(r => !game.relics.includes(r) && RELICS_DB[r].tier !== 'boss' && RELICS_DB[r].tier !== 'starter');
+                if (unowned.length > 0) { const rId = unowned[Math.floor(Math.random() * unowned.length)]; list.innerHTML += `<button onclick="claimReward(this, () => { getRelic('${rId}'); playSound('heal'); updateGlobalUI(); })" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 p-3 rounded text-left flex items-center gap-3"><span class="text-2xl">${RELICS_DB[rId].icon}</span> <div><span class="font-bold text-blue-400">获得遗物：${RELICS_DB[rId].name}</span><br><span class="text-xs text-zinc-400">${RELICS_DB[rId].desc}</span></div></button>`; }
+            }
+            list.innerHTML += `<button onclick="draftCardReward(this)" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 p-3 rounded text-left flex items-center gap-3"><span class="text-2xl">🎴</span> <span class="font-bold text-green-400">将一张牌加入牌组</span></button>`;
+        }
+
+        function claimReward(btn, callback) { callback(); btn.classList.add('opacity-30', 'pointer-events-none'); btn.innerHTML += ' <span class="ml-auto text-sm text-zinc-500">(已领取)</span>'; }
+
+        function draftCardReward(btn) {
+            playSound('card');
+            let pool = Object.keys(CARDS_DB).filter(k => !k.includes('+') && k !== 'strike' && k !== 'defend' && !k.startsWith('custom_'));
+            pool = pool.sort(() => 0.5 - Math.random()); const choices = pool.slice(0, 3);
+            let modalHtml = `<h2 class="text-2xl font-bold mb-6 text-green-400">选择一张卡牌</h2><div class="flex justify-center gap-6 mb-6">`;
+            choices.forEach(key => { modalHtml += generateCardHTML(CARDS_DB[key], `addCardToDeck('${key}')`); });
+            modalHtml += `</div><button onclick="closeModal()" class="bg-zinc-800 px-6 py-2 rounded text-white font-bold">跳过</button>`;
+            showModal("", modalHtml, false);
+            btn.classList.add('opacity-30', 'pointer-events-none'); btn.innerHTML += ' <span class="ml-auto text-sm text-zinc-500">(已领取)</span>'; btn.onclick = null;
+        }
+
+        function addCardToDeck(cardKey) { playSound('heal'); game.deck.push(cardKey); closeModal(); updateGlobalUI(); }
+
+        function getRelic(rId) { game.relics.push(rId); if (rId === 'roasted_apple') { game.maxHp += 7; modifyHp(7); } }
+
+        // --- 商店逻辑 ---
+        function initShop() {
+            document.getElementById('shop-view').classList.remove('hidden'); const shopCards = document.getElementById('shop-cards'); shopCards.innerHTML = '';
+            let cardPool = Object.keys(CARDS_DB).filter(k => !k.includes('+') && k !== 'strike' && k !== 'defend' && !k.startsWith('custom_')).sort(() => 0.5 - Math.random());
+            cardPool.slice(0, 4).forEach(cKey => { 
+                const price = Math.floor(Math.random() * 20) + 40;
+                const el = document.createElement('div'); el.className = "flex flex-col items-center gap-2";
+                el.innerHTML = `${generateCardHTML(CARDS_DB[cKey], '', '', 'width:110px; height:150px;')}<button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-4 py-1 rounded text-sm text-yellow-400 font-bold flex items-center gap-1"><span class="text-xs">🪙</span> ${price}</button>`;
+                el.querySelector('button').onclick = (e) => { if (game.gold >= price) { playSound('heal'); game.gold -= price; game.deck.push(cKey); updateGlobalUI(); el.style.opacity = 0.3; el.querySelector('button').disabled = true; el.querySelector('button').innerText = '已售出'; } else { playSound('error'); } };
+                shopCards.appendChild(el);
+            });
+            const unowned = Object.keys(RELICS_DB).filter(r => !game.relics.includes(r) && RELICS_DB[r].tier !== 'boss' && RELICS_DB[r].tier !== 'starter');
+            const shopRelics = document.getElementById('shop-relics'); shopRelics.innerHTML = '';
+            unowned.sort(() => 0.5 - Math.random()).slice(0, 2).forEach(rKey => {
+                const relic = RELICS_DB[rKey]; const el = document.createElement('div'); el.className = "relic-container flex flex-col items-center gap-2 w-32 cursor-help z-10";
+                el.innerHTML = `<div class="w-16 h-16 bg-zinc-800 rounded border-2 border-zinc-600 flex items-center justify-center text-3xl">${relic.icon}</div><div class="relic-tooltip"><strong class="text-yellow-400 block mb-1">${relic.name}</strong><span class="text-zinc-300 text-xs">${relic.desc}</span></div><div class="text-xs font-bold text-center h-8">${relic.name}</div><button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 w-full py-1 rounded text-sm text-yellow-400 font-bold flex justify-center items-center gap-1"><span class="text-xs">🪙</span> 150</button>`;
+                el.querySelector('button').onclick = (e) => { if (game.gold >= 150) { playSound('heal'); game.gold -= 150; getRelic(rKey); updateGlobalUI(); el.style.opacity = 0.3; el.querySelector('button').disabled = true; el.querySelector('button').innerText = '已售出'; } else { playSound('error'); } };
+                shopRelics.appendChild(el);
+            });
+            let removeCostFinal = game.relics.includes('lucky_coin') ? Math.max(25, game.removeCost - 25) : game.removeCost;
+            document.getElementById('remove-price').innerText = `${removeCostFinal} 金币`;
+        }
+
+        function buyRemoval() {
+            let removeCostFinal = game.relics.includes('lucky_coin') ? Math.max(25, game.removeCost - 25) : game.removeCost;
+            if (game.gold >= removeCostFinal && game.deck.length > 0) {
+                playSound('card'); let modalHtml = `<h2 class="text-2xl font-bold mb-4 text-red-400">选择要移除的卡牌</h2><div class="flex flex-wrap justify-center gap-4 max-h-96 overflow-y-auto p-2">`;
+                game.deck.forEach((key, idx) => { const card = CARDS_DB[key]; modalHtml += `<div onclick="playSound('hit'); game.gold -= ${removeCostFinal}; game.removeCost += 25; game.deck.splice(${idx}, 1); closeModal(); updateGlobalUI();" class="card card-grid-item p-2 text-xs border border-zinc-600 cursor-pointer"><div class="font-bold mb-1 text-white">${card.name}</div><div class="text-zinc-500">${card.type==='attack'?'攻击':'技能'}</div></div>`; });
+                modalHtml += `</div>`; showModal("", modalHtml, true);
+            } else { playSound('error'); }
+        }
+
+        // --- 休息处与 Gemini API ✨ 深渊铸造 ✨ ---
+        const geminiApiKey = apiKey; // 使用注入的 API Key
+
+        function initRest() { 
+            document.getElementById('rest-view').classList.remove('hidden'); 
+            document.getElementById('rest-menu').classList.remove('hidden'); 
+            document.getElementById('smith-menu').classList.add('hidden'); 
+            document.getElementById('forge-menu').classList.add('hidden'); 
+        }
+
+        function handleRest(type) { 
+            if (type === 'heal') { 
+                if(game.relics.includes('cursed_blood')) { playSound('error'); spawnFloatingText('player-avatar-container', '诅咒之血!', 'text-red-500'); return; }
+                playSound('heal'); modifyHp(Math.floor(game.maxHp * 0.3)); setTimeout(endRoom, 500); 
+            } 
+            else if (type === 'smith') { 
+                document.getElementById('rest-menu').classList.add('hidden'); document.getElementById('smith-menu').classList.remove('hidden'); 
+                const container = document.getElementById('smith-cards'); container.innerHTML = '';
+                game.deck.forEach((key, idx) => {
+                    const isUpgradable = !key.includes('+') && CARDS_DB[key + '+'];
+                    const wrapper = document.createElement('div'); wrapper.innerHTML = generateCardHTML(CARDS_DB[key], '', isUpgradable ? 'border-blue-500 cursor-pointer' : 'border-zinc-700 opacity-50 cursor-not-allowed');
+                    const el = wrapper.firstElementChild;
+                    if (isUpgradable) { el.onclick = () => { playSound('card'); showModal("", `<h2 class="text-3xl font-bold mb-8 text-blue-400">卡牌锻造</h2><div class="flex justify-center items-center gap-12 mb-8"><div class="flex flex-col items-center"><span class="text-zinc-400 mb-2 font-bold">升级前</span>${generateCardHTML(CARDS_DB[key], '', 'preview-card')}</div><span class="text-5xl text-blue-500">➡️</span><div class="flex flex-col items-center"><span class="text-green-400 mb-2 font-bold">升级后</span>${generateCardHTML(CARDS_DB[key+'+'], '', 'preview-card border-green-500')}</div></div><button onclick="playSound('block'); game.deck[${idx}] = '${key+'+'}'; closeModal(); setTimeout(endRoom, 400);" class="bg-blue-700 hover:bg-blue-600 px-10 py-3 rounded text-white font-bold text-lg">确认锻造</button>`, true); }; }
+                    container.appendChild(el);
+                });
+            }
+            else if (type === 'forge') {
+                document.getElementById('rest-menu').classList.add('hidden'); 
+                document.getElementById('forge-menu').classList.remove('hidden');
+                document.getElementById('forge-input').value = '';
+            }
+        }
+        function cancelRestSubmenu() { 
+            document.getElementById('smith-menu').classList.add('hidden'); 
+            document.getElementById('forge-menu').classList.add('hidden'); 
+            document.getElementById('rest-menu').classList.remove('hidden'); 
+        }
+
+        async function executeForge() {
+            const input = document.getElementById('forge-input').value.trim() || '暗黑骑士的神秘专属力量';
+            document.getElementById('forge-btn').disabled = true;
+            document.getElementById('forge-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('forge-status').classList.remove('hidden');
+            playSound('card');
+
+            const systemInstruction = `你是一个《杀戮尖塔》风格的暗黑骑士卡牌设计师。
+请根据玩家提供的主题设计一张暗黑风格、逻辑合理、数值平衡的卡牌。
+必须返回严格的JSON对象，不包含任何外部格式或Markdown。
+JSON包含以下字段（必须包含前4个）：
+"name": 字符串 (卡牌名字)
+"cost": 整数 (费用 0-3)
+"type": 字符串 (必须是 "attack" 或 "skill")
+"desc": 字符串 (效果描述文字，如"造成15伤害。失去2生命。")
+可选字段（如果没有此效果则不要输出或者写0）：
+"damage": 整数 (攻击伤害)
+"block": 整数 (获得格挡)
+"heal": 整数 (回血)
+"selfDamage": 整数 (失去生命/自残)
+"soulCost": 整数 (消耗灵魂)
+"soulGain": 整数 (获得灵魂)
+"draw": 整数 (抽牌数量)
+"energyGain": 整数 (获得能量)`;
+
+            const payload = {
+                contents: [{ parts: [{ text: `玩家的主题渴望是：${input}` }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`;
+            
+            let delay = 1000;
+            let success = false;
+            let cardData = null;
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API Request Failed');
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if(text) {
+                        cardData = JSON.parse(text);
+                        success = true;
+                        break;
+                    } else {
+                         throw new Error('Invalid Response Format');
+                    }
+                } catch (err) {
+                    if (i === 4) break;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+
+            document.getElementById('forge-btn').disabled = false;
+            document.getElementById('forge-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('forge-status').classList.add('hidden');
+
+            if (success && cardData) {
+                const newCard = {
+                    name: cardData.name || '深渊造物',
+                    cost: cardData.cost || 0,
+                    type: cardData.type === 'attack' ? 'attack' : 'skill',
+                    desc: cardData.desc || '来自深渊的神秘卡牌。'
+                };
+                ["damage", "block", "heal", "selfDamage", "soulCost", "soulGain", "draw", "energyGain"].forEach(key => {
+                    if (cardData[key]) newCard[key] = parseInt(cardData[key]);
+                });
+
+                const upCard = { ...newCard, name: newCard.name + '+' };
+                if (upCard.damage) upCard.damage += Math.ceil(upCard.damage * 0.3);
+                if (upCard.block) upCard.block += Math.ceil(upCard.block * 0.3);
+
+                const cKey = 'custom_' + Date.now();
+                CARDS_DB[cKey] = newCard; CARDS_DB[cKey + '+'] = upCard;
+                
+                playSound('heal'); game.deck.push(cKey);
+                showModal("✨ 铸造成功", `<div class="text-zinc-300 mb-6 text-center">深渊回应了你的祈求，赐予了你全新的力量...</div><div class="flex justify-center">${generateCardHTML(newCard)}</div><button onclick="closeModal(); endRoom();" class="mt-6 bg-violet-800 hover:bg-violet-700 px-6 py-2 rounded text-white font-bold w-full shadow-lg">收下并继续</button>`);
+            } else {
+                playSound('error');
+                showModal("铸造失败", `<div class="text-red-400 mb-6 text-center">深渊拒绝了沟通，你的意念消散在了虚空之中。请稍后再试。</div><button onclick="closeModal()" class="mt-6 bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded text-white font-bold w-full">返回</button>`);
+            }
+        }
+
+        function initEvent() {
+            document.getElementById('event-view').classList.remove('hidden');
+            const ev = EVENTS_POOL[Math.floor(Math.random() * EVENTS_POOL.length)];
+            document.getElementById('event-title').innerText = ev.title; document.getElementById('event-desc').innerText = ev.desc;
+            const container = document.getElementById('event-options'); container.innerHTML = '';
+            ev.opts.forEach(o => { const b = document.createElement('button'); b.className = "event-btn"; b.innerHTML = `<span>🔸</span> ${o.t}`; b.onclick = o.f; container.appendChild(b); });
+        }
+
+        function log(msg) { const l = document.getElementById('battle-log'); const d = document.createElement('div'); d.innerText = `> ${msg}`; l.prepend(d); if (l.children.length > 5) l.removeChild(l.lastChild); }
+        function showModal(title, contentHtml, showCloseBtn = false) { document.getElementById('modal').classList.remove('hidden'); const contentDiv = document.getElementById('modal-content'); contentDiv.innerHTML = contentHtml; if(title) contentDiv.innerHTML = `<h2 class="text-2xl font-bold mb-4">${title}</h2>` + contentDiv.innerHTML; document.getElementById('modal-close-btn').classList.toggle('hidden', !showCloseBtn); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    </script>
+</body>
+</html>
